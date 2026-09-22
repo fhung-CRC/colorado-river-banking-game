@@ -31,8 +31,8 @@ Version 0.1 represents a simplified water system with one reservoir and two wate
 | Parameter | V0.1 Assumption |
 |---|---:|
 | Reservoir capacity | 20 MAF |
-| Annual inflow | Random, 2–10 MAF |
-| Number of users | 2 |
+| Annual inflow | Random, 2–15 MAF |
+| Number of user accounts | 2 players + 1 System Operator |
 | User A water right | 5 MAF/year |
 | User B water right | 5 MAF/year |
 
@@ -49,12 +49,13 @@ Current-year inflow is therefore allocated according to priority:
 
 For example:
 
-| Annual Inflow | User A Allocation | User B Allocation |
-|---:|---:|---:|
-| 3 MAF | 3 MAF | 0 MAF |
-| 5 MAF | 5 MAF | 0 MAF |
-| 7 MAF | 5 MAF | 2 MAF |
-| 10 MAF | 5 MAF | 5 MAF |
+| Annual Inflow | User A Allocation | User B Allocation | System Operator |
+|---:|---:|---:|---:|
+| 3 MAF | 3 MAF | 0 MAF | 0 MAF |
+| 5 MAF | 5 MAF | 0 MAF | 0 MAF |
+| 7 MAF | 5 MAF | 2 MAF | 0 MAF |
+| 10 MAF | 5 MAF | 5 MAF | 0 MAF |
+| 15 MAF | 5 MAF | 5 MAF | 5 MAF |
 
 This priority rule applies to current-year supply. Previously banked water remains associated with the user who saved it unless it is explicitly transferred under future game rules.
 
@@ -62,7 +63,15 @@ This priority rule applies to current-year supply. Previously banked water remai
 
 ## Water Banking
 
-Each user can maintain a water-storage account in the reservoir.
+The reservoir tracks three water-storage accounts: User A, User B, and the System Operator.
+
+- User A bank limit: 10 MAF
+- User B bank limit: 10 MAF
+- System Operator bank limit: 5 MAF
+- Physical reservoir capacity: 20 MAF
+- Infrastructure protection floor: 5 MAF
+
+The account limits are individual ceilings, not guaranteed physical storage. Their nominal total exceeds the physical reservoir capacity, so the 20 MAF reservoir limit always controls.
 
 Conceptually:
 
@@ -136,6 +145,10 @@ Use  Save/Bank     Withdraw Savings
 
 A major development goal for V0.1 is to ensure that the annual water balance is explicit and internally consistent.
 
+Previously banked water remains owned by the account holder. Bank withdrawals may not reduce reservoir storage below the fixed 5 MAF infrastructure-protection floor. If total player withdrawal requests exceed the water physically withdrawable above that floor, available water is shared pro rata across the requests. Seniority applies to current-year inflow allocation, not to access to previously banked water.
+
+Annual inflow above the combined 10 MAF player rights is assigned to the System Operator account, subject to its 5 MAF account limit and the reservoir's 20 MAF physical capacity. System Operator storage is intended for future market sales, environmental or water-quality releases, or system resilience.
+
 ---
 
 ## V0.1 Development Goals
@@ -146,9 +159,9 @@ V0.1 will include:
 
 - reproducible random hydrology;
 - senior/junior priority allocation;
-- individual storage accounts;
-- reservoir capacity constraints;
-- deposits and withdrawals;
+- three explicit storage accounts (A, B, and System Operator);
+- 20 MAF reservoir capacity and a fixed 5 MAF infrastructure-protection floor;
+- deposits and pro-rata constrained withdrawals;
 - supplemental-water purchases;
 - demand reductions;
 - annual economic costs;
@@ -166,7 +179,7 @@ The simulation engine will be kept separate from the user interface so that addi
 
 ### V0.1 — Toy Banking Model
 
-One reservoir, two users, priority rights, banking, uncertain inflow, and basic economic decisions.
+One reservoir, two users plus a System Operator account, priority rights, banking, uncertain 2–15 MAF inflow, a 5 MAF infrastructure-protection floor, pro-rata constrained withdrawals, and basic economic decisions.
 
 ### V0.2 — Strategy Game
 
