@@ -2,8 +2,8 @@ import type { Balances, SimulationConfig, UserDecision, YearResult } from './typ
 
 export const defaultConfig: SimulationConfig = {
   reservoirCapacity:20, infrastructureFloor:5, inflowMin:2, inflowMax:15,
-  annualRightA:5, annualRightB:5, bankLimitA:10, bankLimitB:10, bankLimitSO:5,
-  reductionCostA:80, reductionCostB:40, supplementalMin:50, supplementalMax:100,
+  annualRightA:5, annualRightB:5, bankLimitA:10, bankLimitB:10, bankLimitFed:5,
+  reductionCostA:80, reductionCostB:40, supplementalCost:75,
   demandA:5, demandB:5
 }
 
@@ -16,7 +16,7 @@ export function allocateInflow(inflow:number,c:SimulationConfig=defaultConfig){
   const allocationA=Math.min(c.annualRightA,Math.max(0,inflow))
   const remaining=Math.max(0,inflow-allocationA)
   const allocationB=Math.min(c.annualRightB,remaining)
-  return {allocationA,allocationB,systemAllocation:Math.max(0,inflow-allocationA-allocationB)}
+  return {allocationA,allocationB,federalAllocation:Math.max(0,inflow-allocationA-allocationB)}
 }
 
 function acceptDeposit(balance:number,requested:number,limit:number,space:number){
@@ -24,7 +24,7 @@ function acceptDeposit(balance:number,requested:number,limit:number,space:number
 }
 
 export function proRataWithdraw(balances:Balances,requests:{A:number;B:number},floor:number){
-  const storage=balances.A+balances.B+balances.SO
+  const storage=balances.A+balances.B+balances.Fed
   const available=Math.max(0,storage-floor)
   const a=Math.min(Math.max(0,requests.A),balances.A)
   const b=Math.min(Math.max(0,requests.B),balances.B)
@@ -35,9 +35,15 @@ export function proRataWithdraw(balances:Balances,requests:{A:number;B:number},f
   return {A:a*f,B:b*f}
 }
 
-export function runYear(year:number,start:Balances,inflow:number,price:number,d:UserDecision,c:SimulationConfig=defaultConfig):YearResult{
-  const startStorage=start.A+start.B+start.SO
-  const {allocationA,allocationB,systemAllocation}=allocateInflow(inflow,c)
+export function runYear(
+  year:number,
+  start:Balances,
+  inflow:number,
+  d:UserDecision,
+  c:SimulationConfig=defaultConfig
+):YearResult{
+  const startStorage=start.A+start.B+start.Fed
+  const {allocationA,allocationB,federalAllocation}=allocateInflow(inflow,c)
 
   const conserveA=Math.min(Math.max(0,d.conserveA),allocationA)
   const conserveB=Math.min(Math.max(0,d.conserveB),allocationB)
@@ -52,14 +58,17 @@ export function runYear(year:number,start:Balances,inflow:number,price:number,d:
   const depositA=acceptDeposit(balances.A,reqDepA,c.bankLimitA,space)
   balances.A+=depositA
   space-=depositA
+
   const depositB=acceptDeposit(balances.B,reqDepB,c.bankLimitB,space)
   balances.B+=depositB
   space-=depositB
-  const depositSO=acceptDeposit(balances.SO,systemAllocation,c.bankLimitSO,space)
-  balances.SO+=depositSO
-  space-=depositSO
 
-  const spill=(reqDepA-depositA)+(reqDepB-depositB)+(systemAllocation-depositSO)
+  const depositFed=acceptDeposit(balances.Fed,federalAllocation,c.bankLimitFed,space)
+  balances.Fed+=depositFed
+  space-=depositFed
+
+  const spill=(reqDepA-depositA)+(reqDepB-depositB)+(federalAllocation-depositFed)
+
   const shortageA=Math.max(0,c.demandA-directUseA)
   const shortageB=Math.max(0,c.demandB-directUseB)
 
@@ -76,15 +85,16 @@ export function runYear(year:number,start:Balances,inflow:number,price:number,d:
   const reductionA=residualA-supplementalA
   const reductionB=residualB-supplementalB
 
-  const totalStorage=balances.A+balances.B+balances.SO
-  const costA=supplementalA*price+reductionA*c.reductionCostA
-  const costB=supplementalB*price+reductionB*c.reductionCostB
+  const totalStorage=balances.A+balances.B+balances.Fed
+  const costA=supplementalA*c.supplementalCost+reductionA*c.reductionCostA
+  const costB=supplementalB*c.supplementalCost+reductionB*c.reductionCostB
   const accountedEnd=totalStorage+directUseA+directUseB+spill+wd.A+wd.B
   const waterBalanceError=(startStorage+inflow)-accountedEnd
 
   return {
-    year,inflow,supplementalPrice:price,allocationA,allocationB,systemAllocation,
-    directUseA,directUseB,depositA,depositB,depositSO,
+    year,inflow,supplementalPrice:c.supplementalCost,
+    allocationA,allocationB,federalAllocation,
+    directUseA,directUseB,depositA,depositB,depositFed,
     requestedWithdrawA:reqWA,requestedWithdrawB:reqWB,
     actualWithdrawA:wd.A,actualWithdrawB:wd.B,
     supplementalA,supplementalB,reductionA,reductionB,
@@ -92,7 +102,11 @@ export function runYear(year:number,start:Balances,inflow:number,price:number,d:
   }
 }
 
-export function autoDecision(balances:Balances,inflow:number,price:number,c:SimulationConfig=defaultConfig):UserDecision{
+export function autoDecision(
+  balances:Balances,
+  inflow:number,
+  c:SimulationConfig=defaultConfig
+):UserDecision{
   const {allocationA,allocationB}=allocateInflow(inflow,c)
   const shortageA=Math.max(0,c.demandA-allocationA)
   const shortageB=Math.max(0,c.demandB-allocationB)
@@ -100,7 +114,7 @@ export function autoDecision(balances:Balances,inflow:number,price:number,c:Simu
     conserveA:0,conserveB:0,
     requestWithdrawA:Math.min(shortageA,balances.A),
     requestWithdrawB:Math.min(shortageB,balances.B),
-    requestSupplementalA:price<c.reductionCostA?shortageA:0,
-    requestSupplementalB:price<c.reductionCostB?shortageB:0
+    requestSupplementalA:c.supplementalCost<c.reductionCostA?shortageA:0,
+    requestSupplementalB:c.supplementalCost<c.reductionCostB?shortageB:0
   }
 }
