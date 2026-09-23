@@ -32,7 +32,7 @@ Version 0.1 represents a simplified water system with one reservoir and two wate
 |---|---:|
 | Reservoir capacity | 20 MAF |
 | Annual inflow | Random, 2–15 MAF |
-| Number of user accounts | 2 players + 1 System Operator |
+| Number of user accounts | 2 players + 1 Fed |
 | User A water right | 5 MAF/year |
 | User B water right | 5 MAF/year |
 
@@ -49,7 +49,7 @@ Current-year inflow is therefore allocated according to priority:
 
 For example:
 
-| Annual Inflow | User A Allocation | User B Allocation | System Operator |
+| Annual Inflow | User A Allocation | User B Allocation | Fed |
 |---:|---:|---:|---:|
 | 3 MAF | 3 MAF | 0 MAF | 0 MAF |
 | 5 MAF | 5 MAF | 0 MAF | 0 MAF |
@@ -63,11 +63,11 @@ This priority rule applies to current-year supply. Previously banked water remai
 
 ## Water Banking
 
-The reservoir tracks three water-storage accounts: User A, User B, and the System Operator.
+The reservoir tracks three water-storage accounts: User A, User B, and the Fed.
 
 - User A bank limit: 10 MAF
 - User B bank limit: 10 MAF
-- System Operator bank limit: 5 MAF
+- Fed bank limit: 5 MAF
 - Physical reservoir capacity: 20 MAF
 - Infrastructure protection floor: 5 MAF
 
@@ -103,10 +103,10 @@ Users have different costs for reducing their water use.
 
 | Parameter | User A | User B |
 |---|---:|---:|
-| Demand-reduction cost | $80/AF | $40/AF |
-| Supplemental water cost | $50–$100/AF | $50–$100/AF |
+| Demand-reduction cost | User input (default $80/AF) | User input (default $40/AF) |
+| Supplemental water cost | User input (default $75/AF) | User input (default $75/AF) |
 
-Supplemental-water prices vary between simulation years.
+Supplemental-water cost is a game input, along with A and B demand-reduction costs.
 
 These differences create different economic incentives.
 
@@ -147,7 +147,7 @@ A major development goal for V0.1 is to ensure that the annual water balance is 
 
 Previously banked water remains owned by the account holder. Bank withdrawals may not reduce reservoir storage below the fixed 5 MAF infrastructure-protection floor. If total player withdrawal requests exceed the water physically withdrawable above that floor, available water is shared pro rata across the requests. Seniority applies to current-year inflow allocation, not to access to previously banked water.
 
-Annual inflow above the combined 10 MAF player rights is assigned to the System Operator account, subject to its 5 MAF account limit and the reservoir's 20 MAF physical capacity. System Operator storage is intended for future market sales, environmental or water-quality releases, or system resilience.
+Annual inflow above the combined 10 MAF player rights is assigned to the Fed account, subject to its 5 MAF account limit and the reservoir's 20 MAF physical capacity. Fed storage is intended for future market sales, environmental or water-quality releases, or system resilience.
 
 ---
 
@@ -159,7 +159,7 @@ V0.1 will include:
 
 - reproducible random hydrology;
 - senior/junior priority allocation;
-- three explicit storage accounts (A, B, and System Operator);
+- three explicit storage accounts (A, B, and Fed);
 - 20 MAF reservoir capacity and a fixed 5 MAF infrastructure-protection floor;
 - deposits and pro-rata constrained withdrawals;
 - supplemental-water purchases;
@@ -179,7 +179,7 @@ The simulation engine will be kept separate from the user interface so that addi
 
 ### V0.1 — Toy Banking Model
 
-One reservoir, two users plus a System Operator account, priority rights, banking, uncertain 2–15 MAF inflow, a 5 MAF infrastructure-protection floor, pro-rata constrained withdrawals, and basic economic decisions.
+One reservoir, two users plus a Fed account, priority rights, banking, uncertain 2–15 MAF inflow, a 5 MAF infrastructure-protection floor, pro-rata constrained withdrawals, and basic economic decisions.
 
 ### V0.2 — Strategy Game
 
@@ -187,7 +187,7 @@ Add interactive player decisions, storage strategies, transaction costs, banking
 
 ### V0.3 — Basin Banking Model
 
-Introduce Upper Basin, Lower Basin, and Federal/system accounts and experiment with explicit deficit-allocation rules.
+Introduce Upper Basin, Lower Basin, and Federal/Fed accounts and experiment with explicit deficit-allocation rules.
 
 ### V1.0 — Colorado River Simulation Platform
 
