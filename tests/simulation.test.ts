@@ -61,7 +61,7 @@ describe('accounting',()=>{
   })
 
   it('pro-rates Fed purposes when the floor constrains total stored-water releases',()=>{
-    const r=runYear(1,{A:3,B:2,Fed:2},10,decision({
+    const r=runYear(1,{A:3,B:2,Fed:2},3,decision({
       requestWithdrawA:2,
       fedRegulationRelease:1,
       fedEnvironmentalRelease:1
