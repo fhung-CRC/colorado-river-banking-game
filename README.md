@@ -22,9 +22,9 @@ The initial versions intentionally use a highly simplified system so that the un
 
 ---
 
-## V0.1 — One Reservoir, Two Water Users
+## Toy 1: Seniority + Banking
 
-Version 0.1 represents a simplified water system with one reservoir and two water users.
+**Toy 1: Seniority + Banking** is the baseline model. It represents a simplified water system with one reservoir, two water users with senior/junior priority, and a Fed storage account.
 
 ### Physical System
 
@@ -151,11 +151,11 @@ Annual inflow above the combined 10 MAF player rights is assigned to the Fed acc
 
 ---
 
-## V0.1 Development Goals
+## Toy 1 Development Goals
 
 The first version will focus on building a transparent simulation engine and a simple web interface.
 
-V0.1 will include:
+Toy 1 includes:
 
 - reproducible random hydrology;
 - senior/junior priority allocation;
@@ -177,7 +177,7 @@ The simulation engine will be kept separate from the user interface so that addi
 
 ## Planned Development
 
-### V0.1 — Toy Banking Model
+### Toy 1 — Seniority + Banking
 
 One reservoir, two users plus a Fed account, priority rights, banking, uncertain 2–15 MAF inflow, a 5 MAF infrastructure-protection floor, pro-rata constrained withdrawals, and basic economic decisions.
 
@@ -211,7 +211,7 @@ Potential future features include:
 
 This project is currently a **conceptual simulation and research tool**.
 
-V0.1 does **not** represent existing Colorado River law, the Colorado River Compact, current reservoir operating rules, Reclamation policy, or any official proposal.
+Toy 1 does **not** represent existing Colorado River law, the Colorado River Compact, current reservoir operating rules, Reclamation policy, or any official proposal.
 
 The simplified senior/junior priority system, storage accounts, economic assumptions, and banking rules are experimental mechanisms intended to help explore incentives and system behavior.
 
@@ -259,9 +259,9 @@ colorado-river-banking-game/
 
 ## Current Status
 
-🚧 **Interactive prototype — Development**
+🚧 **Toy 1: Seniority + Banking — Baseline model**
 
-The baseline V0.1 accounting engine is implemented and tested. The current development branch adds year-by-year player decisions, a reservoir/account dashboard, manual supplemental-water choices, and an annual accounting ledger.
+Toy 1 is the baseline model for the project. It combines senior/junior current-year allocation with explicit banking accounts, configurable economic costs, a Fed account, a 5 MAF infrastructure-protection floor, and year-by-year player decisions.
 
 The guiding principle of the project is:
 
