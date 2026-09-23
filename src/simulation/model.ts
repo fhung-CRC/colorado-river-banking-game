@@ -39,52 +39,68 @@ export function runYear(year:number,start:Balances,inflow:number,price:number,d:
   const startStorage=start.A+start.B+start.SO
   const {allocationA,allocationB,systemAllocation}=allocateInflow(inflow,c)
 
-  const directUseA=Math.max(0,Math.min(c.demandA,allocationA-Math.max(0,d.conserveA)))
-  const directUseB=Math.max(0,Math.min(c.demandB,allocationB-Math.max(0,d.conserveB)))
+  const conserveA=Math.min(Math.max(0,d.conserveA),allocationA)
+  const conserveB=Math.min(Math.max(0,d.conserveB),allocationB)
+  const directUseA=Math.max(0,Math.min(c.demandA,allocationA-conserveA))
+  const directUseB=Math.max(0,Math.min(c.demandB,allocationB-conserveB))
   const reqDepA=Math.max(0,allocationA-directUseA)
   const reqDepB=Math.max(0,allocationB-directUseB)
 
   const balances={...start}
   let space=Math.max(0,c.reservoirCapacity-startStorage)
 
-  const depositA=acceptDeposit(balances.A,reqDepA,c.bankLimitA,space); balances.A+=depositA; space-=depositA
-  const depositB=acceptDeposit(balances.B,reqDepB,c.bankLimitB,space); balances.B+=depositB; space-=depositB
-  const depositSO=acceptDeposit(balances.SO,systemAllocation,c.bankLimitSO,space); balances.SO+=depositSO; space-=depositSO
+  const depositA=acceptDeposit(balances.A,reqDepA,c.bankLimitA,space)
+  balances.A+=depositA
+  space-=depositA
+  const depositB=acceptDeposit(balances.B,reqDepB,c.bankLimitB,space)
+  balances.B+=depositB
+  space-=depositB
+  const depositSO=acceptDeposit(balances.SO,systemAllocation,c.bankLimitSO,space)
+  balances.SO+=depositSO
+  space-=depositSO
 
   const spill=(reqDepA-depositA)+(reqDepB-depositB)+(systemAllocation-depositSO)
-
   const shortageA=Math.max(0,c.demandA-directUseA)
   const shortageB=Math.max(0,c.demandB-directUseB)
-  const reqWA=Math.min(shortageA,Math.max(0,d.requestWithdrawA))
-  const reqWB=Math.min(shortageB,Math.max(0,d.requestWithdrawB))
+
+  const reqWA=Math.min(shortageA,Math.max(0,d.requestWithdrawA),start.A)
+  const reqWB=Math.min(shortageB,Math.max(0,d.requestWithdrawB),start.B)
   const wd=proRataWithdraw(balances,{A:reqWA,B:reqWB},c.infrastructureFloor)
-  balances.A-=wd.A; balances.B-=wd.B
+  balances.A-=wd.A
+  balances.B-=wd.B
 
   const residualA=Math.max(0,shortageA-wd.A)
   const residualB=Math.max(0,shortageB-wd.B)
-  const supplementalA=price<c.reductionCostA?residualA:0
+  const supplementalA=Math.min(residualA,Math.max(0,d.requestSupplementalA))
+  const supplementalB=Math.min(residualB,Math.max(0,d.requestSupplementalB))
   const reductionA=residualA-supplementalA
-  const supplementalB=price<c.reductionCostB?residualB:0
   const reductionB=residualB-supplementalB
 
   const totalStorage=balances.A+balances.B+balances.SO
   const costA=supplementalA*price+reductionA*c.reductionCostA
   const costB=supplementalB*price+reductionB*c.reductionCostB
-
   const accountedEnd=totalStorage+directUseA+directUseB+spill+wd.A+wd.B
   const waterBalanceError=(startStorage+inflow)-accountedEnd
 
   return {
     year,inflow,supplementalPrice:price,allocationA,allocationB,systemAllocation,
-    depositA,depositB,depositSO,requestedWithdrawA:reqWA,requestedWithdrawB:reqWB,
-    actualWithdrawA:wd.A,actualWithdrawB:wd.B,supplementalA,supplementalB,reductionA,reductionB,
+    directUseA,directUseB,depositA,depositB,depositSO,
+    requestedWithdrawA:reqWA,requestedWithdrawB:reqWB,
+    actualWithdrawA:wd.A,actualWithdrawB:wd.B,
+    supplementalA,supplementalB,reductionA,reductionB,
     endBalances:balances,totalStorage,spill,costA,costB,waterBalanceError
   }
 }
 
-export function autoDecision(balances:Balances,inflow:number,c:SimulationConfig=defaultConfig):UserDecision{
+export function autoDecision(balances:Balances,inflow:number,price:number,c:SimulationConfig=defaultConfig):UserDecision{
   const {allocationA,allocationB}=allocateInflow(inflow,c)
   const shortageA=Math.max(0,c.demandA-allocationA)
   const shortageB=Math.max(0,c.demandB-allocationB)
-  return {conserveA:0,conserveB:0,requestWithdrawA:Math.min(shortageA,balances.A),requestWithdrawB:Math.min(shortageB,balances.B)}
+  return {
+    conserveA:0,conserveB:0,
+    requestWithdrawA:Math.min(shortageA,balances.A),
+    requestWithdrawB:Math.min(shortageB,balances.B),
+    requestSupplementalA:price<c.reductionCostA?shortageA:0,
+    requestSupplementalB:price<c.reductionCostB?shortageB:0
+  }
 }
