@@ -23,16 +23,21 @@ function acceptDeposit(balance:number,requested:number,limit:number,space:number
   return Math.max(0,Math.min(requested,limit-balance,space))
 }
 
-export function proRataWithdraw(balances:Balances,requests:{A:number;B:number},floor:number){
+export function proRataWithdraw(
+  balances:Balances,
+  requests:{A:number;B:number;Fed?:number},
+  floor:number
+){
   const storage=balances.A+balances.B+balances.Fed
   const available=Math.max(0,storage-floor)
   const a=Math.min(Math.max(0,requests.A),balances.A)
   const b=Math.min(Math.max(0,requests.B),balances.B)
-  const total=a+b
-  if(total<=available) return {A:a,B:b}
-  if(total===0||available===0) return {A:0,B:0}
+  const fed=Math.min(Math.max(0,requests.Fed??0),balances.Fed)
+  const total=a+b+fed
+  if(total<=available) return {A:a,B:b,Fed:fed}
+  if(total===0||available===0) return {A:0,B:0,Fed:0}
   const f=available/total
-  return {A:a*f,B:b*f}
+  return {A:a*f,B:b*f,Fed:fed*f}
 }
 
 export function runYear(
@@ -52,8 +57,38 @@ export function runYear(
   const reqDepA=Math.max(0,allocationA-directUseA)
   const reqDepB=Math.max(0,allocationB-directUseB)
 
-  const balances={...start}
-  let space=Math.max(0,c.reservoirCapacity-startStorage)
+  const shortageA=Math.max(0,c.demandA-directUseA)
+  const shortageB=Math.max(0,c.demandB-directUseB)
+
+  const reqWA=Math.min(shortageA,Math.max(0,d.requestWithdrawA),start.A)
+  const reqWB=Math.min(shortageB,Math.max(0,d.requestWithdrawB),start.B)
+
+  const rawFedReg=Math.max(0,d.fedRegulationRelease)
+  const rawFedEnv=Math.max(0,d.fedEnvironmentalRelease)
+  const rawFedTotal=rawFedReg+rawFedEnv
+  const eligibleFedTotal=Math.min(rawFedTotal,start.Fed)
+  const eligibleFedReg=rawFedTotal>0?eligibleFedTotal*(rawFedReg/rawFedTotal):0
+  const eligibleFedEnv=rawFedTotal>0?eligibleFedTotal*(rawFedEnv/rawFedTotal):0
+
+  // Stored-water withdrawals and Fed releases use opening storage only.
+  // Current-year deposits cannot create same-year withdrawal liquidity.
+  const wd=proRataWithdraw(
+    start,
+    {A:reqWA,B:reqWB,Fed:eligibleFedTotal},
+    c.infrastructureFloor
+  )
+
+  const fedScale=eligibleFedTotal>0?wd.Fed/eligibleFedTotal:0
+  const actualFedReg=eligibleFedReg*fedScale
+  const actualFedEnv=eligibleFedEnv*fedScale
+
+  const balances:Balances={
+    A:start.A-wd.A,
+    B:start.B-wd.B,
+    Fed:start.Fed-wd.Fed
+  }
+
+  let space=Math.max(0,c.reservoirCapacity-(balances.A+balances.B+balances.Fed))
 
   const depositA=acceptDeposit(balances.A,reqDepA,c.bankLimitA,space)
   balances.A+=depositA
@@ -69,15 +104,6 @@ export function runYear(
 
   const spill=(reqDepA-depositA)+(reqDepB-depositB)+(federalAllocation-depositFed)
 
-  const shortageA=Math.max(0,c.demandA-directUseA)
-  const shortageB=Math.max(0,c.demandB-directUseB)
-
-  const reqWA=Math.min(shortageA,Math.max(0,d.requestWithdrawA),start.A)
-  const reqWB=Math.min(shortageB,Math.max(0,d.requestWithdrawB),start.B)
-  const wd=proRataWithdraw(balances,{A:reqWA,B:reqWB},c.infrastructureFloor)
-  balances.A-=wd.A
-  balances.B-=wd.B
-
   const residualA=Math.max(0,shortageA-wd.A)
   const residualB=Math.max(0,shortageB-wd.B)
   const supplementalA=Math.min(residualA,Math.max(0,d.requestSupplementalA))
@@ -88,7 +114,7 @@ export function runYear(
   const totalStorage=balances.A+balances.B+balances.Fed
   const costA=supplementalA*c.supplementalCost+reductionA*c.reductionCostA
   const costB=supplementalB*c.supplementalCost+reductionB*c.reductionCostB
-  const accountedEnd=totalStorage+directUseA+directUseB+spill+wd.A+wd.B
+  const accountedEnd=totalStorage+directUseA+directUseB+spill+wd.A+wd.B+wd.Fed
   const waterBalanceError=(startStorage+inflow)-accountedEnd
 
   return {
@@ -97,6 +123,10 @@ export function runYear(
     directUseA,directUseB,depositA,depositB,depositFed,
     requestedWithdrawA:reqWA,requestedWithdrawB:reqWB,
     actualWithdrawA:wd.A,actualWithdrawB:wd.B,
+    requestedFedRegulationRelease:eligibleFedReg,
+    requestedFedEnvironmentalRelease:eligibleFedEnv,
+    actualFedRegulationRelease:actualFedReg,
+    actualFedEnvironmentalRelease:actualFedEnv,
     supplementalA,supplementalB,reductionA,reductionB,
     endBalances:balances,totalStorage,spill,costA,costB,waterBalanceError
   }
@@ -115,6 +145,8 @@ export function autoDecision(
     requestWithdrawA:Math.min(shortageA,balances.A),
     requestWithdrawB:Math.min(shortageB,balances.B),
     requestSupplementalA:c.supplementalCost<c.reductionCostA?shortageA:0,
-    requestSupplementalB:c.supplementalCost<c.reductionCostB?shortageB:0
+    requestSupplementalB:c.supplementalCost<c.reductionCostB?shortageB:0,
+    fedRegulationRelease:0,
+    fedEnvironmentalRelease:0
   }
 }

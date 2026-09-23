@@ -62,3 +62,14 @@ th:first-child,td:first-child{text-align:left}
 @media(max-width:560px){
   .app{padding:15px}h1{font-size:1.6rem}.section-heading{align-items:flex-start;flex-direction:column}.section-heading button{width:100%}.year-facts,.summary{grid-template-columns:1fr 1fr}.player-facts{flex-direction:column}
 }
+
+.game-tabs{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 16px}
+.game-tab{border:1px solid #9fb0bf;background:#fff;color:#173f63;border-radius:999px;padding:9px 14px;font-weight:700}.game-tab.active{background:#173f63;color:#fff;border-color:#173f63}
+.tab-note{color:#66727d;font-size:.84rem}
+.empty-results,.strategy-note{padding:14px;border:1px solid #e1e6eb;border-radius:10px;background:#f7f9fb;color:#596672;line-height:1.5}
+.strategy-note{margin-top:12px}
+
+.fed-card{margin-top:12px;border:1px solid #cdd9c1;border-radius:11px;padding:14px;display:grid;gap:11px;background:#fbfcf8}
+.fed-card p{font-size:.82rem}
+.fed-inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:700px){.fed-inputs{grid-template-columns:1fr}}
