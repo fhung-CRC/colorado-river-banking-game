@@ -22,9 +22,9 @@ The initial versions intentionally use a highly simplified system so that the un
 
 ---
 
-## V0.1 — One Reservoir, Two Water Users
+## Toy 1: Seniority + Banking
 
-Version 0.1 represents a simplified water system with one reservoir and two water users.
+**Toy 1: Seniority + Banking** is the baseline model. It represents a simplified water system with one reservoir, two water users with senior/junior priority, and a Fed storage account.
 
 ### Physical System
 
@@ -32,7 +32,7 @@ Version 0.1 represents a simplified water system with one reservoir and two wate
 |---|---:|
 | Reservoir capacity | 20 MAF |
 | Annual inflow | Random, 2–15 MAF |
-| Number of user accounts | 2 players + 1 System Operator |
+| Number of user accounts | 2 players + 1 Fed |
 | User A water right | 5 MAF/year |
 | User B water right | 5 MAF/year |
 
@@ -49,7 +49,7 @@ Current-year inflow is therefore allocated according to priority:
 
 For example:
 
-| Annual Inflow | User A Allocation | User B Allocation | System Operator |
+| Annual Inflow | User A Allocation | User B Allocation | Fed |
 |---:|---:|---:|---:|
 | 3 MAF | 3 MAF | 0 MAF | 0 MAF |
 | 5 MAF | 5 MAF | 0 MAF | 0 MAF |
@@ -63,11 +63,11 @@ This priority rule applies to current-year supply. Previously banked water remai
 
 ## Water Banking
 
-The reservoir tracks three water-storage accounts: User A, User B, and the System Operator.
+The reservoir tracks three water-storage accounts: User A, User B, and the Fed.
 
 - User A bank limit: 10 MAF
 - User B bank limit: 10 MAF
-- System Operator bank limit: 5 MAF
+- Fed bank limit: 5 MAF
 - Physical reservoir capacity: 20 MAF
 - Infrastructure protection floor: 5 MAF
 
@@ -103,16 +103,16 @@ Users have different costs for reducing their water use.
 
 | Parameter | User A | User B |
 |---|---:|---:|
-| Demand-reduction cost | $80/AF | $40/AF |
-| Supplemental water cost | $50–$100/AF | $50–$100/AF |
+| Demand-reduction cost | User input (default $80/AF) | User input (default $40/AF) |
+| Supplemental water cost | User input (default $75/AF) | User input (default $75/AF) |
 
-Supplemental-water prices vary between simulation years.
+Supplemental-water cost is a game input, along with A and B demand-reduction costs.
 
 These differences create different economic incentives.
 
 For example, User B has a relatively low demand-reduction cost and may prefer reducing water use rather than purchasing expensive supplemental water. User A may instead purchase supplemental water when its price is below the cost of reducing water use.
 
-Future versions will allow users to make these decisions interactively rather than relying entirely on predetermined decision rules.
+The interactive prototype lets players make these decisions one year at a time. An optional economic-strategy button provides a simple cost-minimizing comparison strategy.
 
 ---
 
@@ -147,19 +147,19 @@ A major development goal for V0.1 is to ensure that the annual water balance is 
 
 Previously banked water remains owned by the account holder. Bank withdrawals may not reduce reservoir storage below the fixed 5 MAF infrastructure-protection floor. If total player withdrawal requests exceed the water physically withdrawable above that floor, available water is shared pro rata across the requests. Seniority applies to current-year inflow allocation, not to access to previously banked water.
 
-Annual inflow above the combined 10 MAF player rights is assigned to the System Operator account, subject to its 5 MAF account limit and the reservoir's 20 MAF physical capacity. System Operator storage is intended for future market sales, environmental or water-quality releases, or system resilience.
+Annual inflow above the combined 10 MAF player rights is assigned to the Fed account, subject to its 5 MAF account limit and the reservoir's 20 MAF physical capacity. Fed storage is intended for future market sales, environmental or water-quality releases, or system resilience.
 
 ---
 
-## V0.1 Development Goals
+## Toy 1 Development Goals
 
 The first version will focus on building a transparent simulation engine and a simple web interface.
 
-V0.1 will include:
+Toy 1 includes:
 
 - reproducible random hydrology;
 - senior/junior priority allocation;
-- three explicit storage accounts (A, B, and System Operator);
+- three explicit storage accounts (A, B, and Fed);
 - 20 MAF reservoir capacity and a fixed 5 MAF infrastructure-protection floor;
 - deposits and pro-rata constrained withdrawals;
 - supplemental-water purchases;
@@ -177,9 +177,9 @@ The simulation engine will be kept separate from the user interface so that addi
 
 ## Planned Development
 
-### V0.1 — Toy Banking Model
+### Toy 1 — Seniority + Banking
 
-One reservoir, two users plus a System Operator account, priority rights, banking, uncertain 2–15 MAF inflow, a 5 MAF infrastructure-protection floor, pro-rata constrained withdrawals, and basic economic decisions.
+One reservoir, two users plus a Fed account, priority rights, banking, uncertain 2–15 MAF inflow, a 5 MAF infrastructure-protection floor, pro-rata constrained withdrawals, and basic economic decisions.
 
 ### V0.2 — Strategy Game
 
@@ -187,7 +187,7 @@ Add interactive player decisions, storage strategies, transaction costs, banking
 
 ### V0.3 — Basin Banking Model
 
-Introduce Upper Basin, Lower Basin, and Federal/system accounts and experiment with explicit deficit-allocation rules.
+Introduce Upper Basin, Lower Basin, and Federal/Fed accounts and experiment with explicit deficit-allocation rules.
 
 ### V1.0 — Colorado River Simulation Platform
 
@@ -211,7 +211,7 @@ Potential future features include:
 
 This project is currently a **conceptual simulation and research tool**.
 
-V0.1 does **not** represent existing Colorado River law, the Colorado River Compact, current reservoir operating rules, Reclamation policy, or any official proposal.
+Toy 1 does **not** represent existing Colorado River law, the Colorado River Compact, current reservoir operating rules, Reclamation policy, or any official proposal.
 
 The simplified senior/junior priority system, storage accounts, economic assumptions, and banking rules are experimental mechanisms intended to help explore incentives and system behavior.
 
@@ -259,9 +259,9 @@ colorado-river-banking-game/
 
 ## Current Status
 
-🚧 **V0.1 — Initial development**
+🚧 **Toy 1: Seniority + Banking — Baseline model**
 
-The immediate priority is to define and test the annual water-accounting rules before adding more complex game mechanics.
+Toy 1 is the baseline model for the project. It combines senior/junior current-year allocation with explicit banking accounts, configurable economic costs, a Fed account, a 5 MAF infrastructure-protection floor, and year-by-year player decisions.
 
 The guiding principle of the project is:
 
