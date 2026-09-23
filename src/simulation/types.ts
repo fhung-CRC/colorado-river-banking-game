@@ -4,12 +4,17 @@ export interface SimulationConfig {
   reductionCostA:number; reductionCostB:number; supplementalCost:number;
   demandA:number; demandB:number;
 }
+
 export interface Balances { A:number; B:number; Fed:number }
+
 export interface UserDecision {
   conserveA:number; conserveB:number;
   requestWithdrawA:number; requestWithdrawB:number;
   requestSupplementalA:number; requestSupplementalB:number;
+  fedRegulationRelease:number;
+  fedEnvironmentalRelease:number;
 }
+
 export interface YearResult {
   year:number; inflow:number; supplementalPrice:number;
   allocationA:number; allocationB:number; federalAllocation:number;
@@ -17,6 +22,8 @@ export interface YearResult {
   depositA:number; depositB:number; depositFed:number;
   requestedWithdrawA:number; requestedWithdrawB:number;
   actualWithdrawA:number; actualWithdrawB:number;
+  requestedFedRegulationRelease:number; requestedFedEnvironmentalRelease:number;
+  actualFedRegulationRelease:number; actualFedEnvironmentalRelease:number;
   supplementalA:number; supplementalB:number;
   reductionA:number; reductionB:number;
   endBalances:Balances; totalStorage:number; spill:number;
