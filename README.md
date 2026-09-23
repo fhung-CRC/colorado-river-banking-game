@@ -112,7 +112,7 @@ These differences create different economic incentives.
 
 For example, User B has a relatively low demand-reduction cost and may prefer reducing water use rather than purchasing expensive supplemental water. User A may instead purchase supplemental water when its price is below the cost of reducing water use.
 
-Future versions will allow users to make these decisions interactively rather than relying entirely on predetermined decision rules.
+The interactive prototype lets players make these decisions one year at a time. An optional economic-strategy button provides a simple cost-minimizing comparison strategy.
 
 ---
 
@@ -259,9 +259,9 @@ colorado-river-banking-game/
 
 ## Current Status
 
-🚧 **V0.1 — Initial development**
+🚧 **Interactive prototype — Development**
 
-The immediate priority is to define and test the annual water-accounting rules before adding more complex game mechanics.
+The baseline V0.1 accounting engine is implemented and tested. The current development branch adds year-by-year player decisions, a reservoir/account dashboard, manual supplemental-water choices, and an annual accounting ledger.
 
 The guiding principle of the project is:
 
