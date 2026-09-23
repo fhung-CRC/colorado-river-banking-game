@@ -276,3 +276,17 @@ MIT
 ## Multi-game website structure
 
 This repository can host multiple simulation games. The web interface can expose each game as its own tab while sharing common simulation and visualization components. Toy 1 is the first tab and remains the baseline continuous simulation. More interactive or year-by-year games can be added later as separate tabs without requiring a separate repository.
+
+
+## Toy 2: Role-Play Simulation
+
+Toy 2 keeps the same one-reservoir seniority and banking framework as Toy 1, but pauses each year for explicit role-play decisions by Player A, Player B, and the Fed.
+
+The Fed has two discretionary release choices from its previously banked account:
+
+- **Regulation / system-management release**
+- **Environmental-benefit release**
+
+Fed releases are treated as withdrawals from previously banked Federal water. They are limited by the Fed account balance and by the same 5 MAF infrastructure-protection floor that limits A and B bank withdrawals. If A/B withdrawal requests plus Fed release requests exceed the water physically available above the floor, eligible requests are reduced pro rata. Current-year deposits do not create same-year withdrawal capacity.
+
+Toy 1 remains the uninterrupted automatic simulation. Toy 2 is the interactive role-play tab.
