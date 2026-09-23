@@ -22,8 +22,33 @@ describe('withdrawals',()=>{
 
 describe('accounting',()=>{
   it('balances every acre-foot in a representative year',()=>{
-    const r=runYear(1,{A:2,B:1,SO:1},12,70,{conserveA:1,conserveB:2,requestWithdrawA:0,requestWithdrawB:2})
+    const r=runYear(1,{A:2,B:1,SO:1},12,70,{
+      conserveA:1,conserveB:2,
+      requestWithdrawA:0,requestWithdrawB:2,
+      requestSupplementalA:0,requestSupplementalB:0
+    })
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-9)
     expect(r.totalStorage).toBeLessThanOrEqual(defaultConfig.reservoirCapacity)
+  })
+
+  it('does not allow a same-year deposit to be immediately withdrawn',()=>{
+    const r=runYear(1,{A:0,B:0,SO:5},5,60,{
+      conserveA:2,conserveB:0,
+      requestWithdrawA:2,requestWithdrawB:0,
+      requestSupplementalA:0,requestSupplementalB:0
+    })
+    expect(r.depositA).toBeCloseTo(2)
+    expect(r.actualWithdrawA).toBe(0)
+    expect(r.reductionA).toBeCloseTo(2)
+  })
+
+  it('lets players choose supplemental supply and assigns the remainder to reduction',()=>{
+    const r=runYear(1,{A:0,B:0,SO:5},3,70,{
+      conserveA:0,conserveB:0,
+      requestWithdrawA:0,requestWithdrawB:0,
+      requestSupplementalA:1,requestSupplementalB:0
+    })
+    expect(r.supplementalA).toBeCloseTo(1)
+    expect(r.reductionA).toBeCloseTo(1)
   })
 })
