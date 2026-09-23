@@ -106,8 +106,8 @@ export default function App(){
   return <main className="app">
     <header>
       <div>
-        <span className="eyebrow">Interactive prototype</span>
-        <h1>Colorado River Banking Game</h1>
+        <span className="eyebrow">Colorado River Banking Game</span>
+        <h1>Toy 1: Seniority + Banking</h1>
         <p>Manage annual water use, savings, withdrawals, supplemental supply, and demand reductions under uncertain inflow.</p>
       </div>
     </header>
