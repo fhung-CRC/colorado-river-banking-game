@@ -112,7 +112,7 @@ These differences create different economic incentives.
 
 For example, User B has a relatively low demand-reduction cost and may prefer reducing water use rather than purchasing expensive supplemental water. User A may instead purchase supplemental water when its price is below the cost of reducing water use.
 
-The interactive prototype lets players make these decisions one year at a time. An optional economic-strategy button provides a simple cost-minimizing comparison strategy.
+Toy 1 is a continuous multi-year simulation: the model runs the selected number of years without stopping for year-by-year player input. A simple automatic strategy handles shortages using prior banked water first, then compares supplemental-water cost with each player's reduction cost.
 
 ---
 
@@ -261,7 +261,7 @@ colorado-river-banking-game/
 
 🚧 **Toy 1: Seniority + Banking — Baseline model**
 
-Toy 1 is the baseline model for the project. It combines senior/junior current-year allocation with explicit banking accounts, configurable economic costs, a Fed account, a 5 MAF infrastructure-protection floor, and year-by-year player decisions.
+Toy 1 is the baseline model for the project. It combines senior/junior current-year allocation with explicit banking accounts, configurable economic costs, a Fed account, a 5 MAF infrastructure-protection floor, and an uninterrupted multi-year simulation. The website is being structured so multiple games can live in the same repository and be selected by tabs.
 
 The guiding principle of the project is:
 
@@ -271,3 +271,8 @@ The guiding principle of the project is:
 
 ## License
 MIT
+
+
+## Multi-game website structure
+
+This repository can host multiple simulation games. The web interface can expose each game as its own tab while sharing common simulation and visualization components. Toy 1 is the first tab and remains the baseline continuous simulation. More interactive or year-by-year games can be added later as separate tabs without requiring a separate repository.
