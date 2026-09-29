@@ -70,9 +70,9 @@ export function optimizeShortage(
 
   while(remaining>1e-9){
     const q=Math.min(step,remaining)
-    const candidates=[
-      {kind:'reduction' as const,cost:marginalCurveCost(reduction,reductionCurve)},
-      {kind:'supplemental' as const,cost:marginalCurveCost(supplemental,supplementalCurve)}
+    const candidates:{kind:'bank'|'supplemental'|'reduction';cost:number}[]=[
+      {kind:'reduction',cost:marginalCurveCost(reduction,reductionCurve)},
+      {kind:'supplemental',cost:marginalCurveCost(supplemental,supplementalCurve)}
     ]
     if(bankWithdrawal+q<=Math.min(openingBank,bankWithdrawalCap)+1e-9){
       candidates.push({
