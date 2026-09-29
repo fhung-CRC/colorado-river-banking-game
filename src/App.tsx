@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { allocateInflow, autoDecision, defaultConfig, runYear, seededRandom } from './simulation/model'
 import type { Balances, SimulationConfig, UserDecision, YearResult } from './simulation/types'
+import Toy3 from './Toy3'
 
 const fmt=(v:number)=>v.toFixed(2)
 
@@ -11,7 +12,7 @@ const blankDecision:UserDecision={
   fedRegulationRelease:0,fedEnvironmentalRelease:0
 }
 
-type GameTab='toy1'|'toy2'
+type GameTab='toy1'|'toy2'|'toy3'
 interface ScenarioYear { inflow:number }
 
 export default function App(){
@@ -37,16 +38,19 @@ export default function App(){
     <header>
       <div>
         <span className="eyebrow">Colorado River Banking Game</span>
-        <h1>{activeGame==='toy1'?'Toy 1: Seniority + Banking':'Toy 2: Role-Play Simulation'}</h1>
+        <h1>{activeGame==='toy1'?'Toy 1: Seniority + Banking':activeGame==='toy2'?'Toy 2: Role-Play Simulation':'Toy 3: Risk + Water Security'}</h1>
         <p>{activeGame==='toy1'
           ?'A continuous multi-year simulation of seniority, banking, drought response, and economic costs.'
-          :'A year-by-year role-play game where A, B, and the Fed make explicit water-management decisions.'}</p>
+          :activeGame==='toy2'
+            ?'A year-by-year role-play game where A, B, and the Fed make explicit water-management decisions.'
+            :'A continuous simulation where players balance current shortage costs against the future security value of stored water.'}</p>
       </div>
     </header>
 
     <nav className="game-tabs" aria-label="Games">
       <button className={'game-tab '+(activeGame==='toy1'?'active':'')} type="button" onClick={()=>setActiveGame('toy1')} aria-current={activeGame==='toy1'?'page':undefined}>Toy 1: Seniority + Banking</button>
       <button className={'game-tab '+(activeGame==='toy2'?'active':'')} type="button" onClick={()=>setActiveGame('toy2')} aria-current={activeGame==='toy2'?'page':undefined}>Toy 2: Role-Play Simulation</button>
+      <button className={'game-tab '+(activeGame==='toy3'?'active':'')} type="button" onClick={()=>setActiveGame('toy3')} aria-current={activeGame==='toy3'?'page':undefined}>Toy 3: Risk + Water Security</button>
     </nav>
 
     {activeGame==='toy1'
@@ -56,12 +60,16 @@ export default function App(){
           reductionCostA={reductionCostA} setReductionCostA={setReductionCostA}
           reductionCostB={reductionCostB} setReductionCostB={setReductionCostB}
           supplementalCost={supplementalCost} setSupplementalCost={setSupplementalCost}/>
-      : <Toy2 config={config} years={years} setYears={setYears} seed={seed} setSeed={setSeed}
-          initialA={initialA} setInitialA={setInitialA} initialB={initialB} setInitialB={setInitialB}
-          initialFed={initialFed} setInitialFed={setInitialFed}
-          reductionCostA={reductionCostA} setReductionCostA={setReductionCostA}
-          reductionCostB={reductionCostB} setReductionCostB={setReductionCostB}
-          supplementalCost={supplementalCost} setSupplementalCost={setSupplementalCost}/>}
+      : activeGame==='toy2'
+        ? <Toy2 config={config} years={years} setYears={setYears} seed={seed} setSeed={setSeed}
+            initialA={initialA} setInitialA={setInitialA} initialB={initialB} setInitialB={setInitialB}
+            initialFed={initialFed} setInitialFed={setInitialFed}
+            reductionCostA={reductionCostA} setReductionCostA={setReductionCostA}
+            reductionCostB={reductionCostB} setReductionCostB={setReductionCostB}
+            supplementalCost={supplementalCost} setSupplementalCost={setSupplementalCost}/>
+        : <Toy3 config={config} years={years} setYears={setYears} seed={seed} setSeed={setSeed}
+            initialA={initialA} setInitialA={setInitialA} initialB={initialB} setInitialB={setInitialB}
+            initialFed={initialFed} setInitialFed={setInitialFed}/>}
   </main>
 }
 
