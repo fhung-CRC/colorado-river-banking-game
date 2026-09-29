@@ -290,3 +290,28 @@ The Fed has two discretionary release choices from its previously banked account
 Fed releases are treated as withdrawals from previously banked Federal water. They are limited by the Fed account balance and by the same 5 MAF infrastructure-protection floor that limits A and B bank withdrawals. If A/B withdrawal requests plus Fed release requests exceed the water physically available above the floor, eligible requests are reduced pro rata. Current-year deposits do not create same-year withdrawal capacity.
 
 Toy 1 remains the uninterrupted automatic simulation. Toy 2 is the interactive role-play tab.
+
+
+## Toy 3: Risk + Water Security
+
+Toy 3 introduces an explicit reason to bank water: protection against costly future drought. Each player chooses a **security target**, expressed as a desired amount of banked storage. The target is not a hard withdrawal floor; it represents the player's preferred drought-protection position.
+
+Toy 3 replaces the fixed one-price shortage response with three competing marginal-cost relationships:
+
+1. **Demand-reduction marginal cost** — low-cost reductions are used first, while deeper reductions become progressively more expensive.
+2. **Supplemental-water marginal cost** — alternative supplies can also become more expensive as larger quantities are needed.
+3. **Lost-security marginal cost** — withdrawing banked water carries an implicit opportunity/risk cost that rises as the player's remaining storage falls relative to the selected security target.
+
+The three curves can cross. As a result, there is no fixed rule that banked water, conservation, or supplemental supply must always be used first. The preferred response can change with the size of the shortage and with the player's current storage position.
+
+The first Toy 3 implementation uses editable **piecewise marginal-cost curves** rather than a fitted exponential or logistic equation. This keeps the assumptions transparent and lets users specify economically meaningful cost tranches directly. The interface displays the curves graphically.
+
+Toy 3 runs as a continuous multi-year simulation. In each year it:
+- allocates current inflow by the same senior/junior rules used in Toys 1 and 2;
+- compares incremental marginal costs for shortage response;
+- respects account balances and the 5 MAF physical infrastructure floor;
+- allows players to preserve current allocation in storage when rebuilding security is worth more than the marginal cost of doing so;
+- reports cash costs separately from implicit lost-security costs; and
+- tracks security coverage, years below target, and minimum security coverage.
+
+The current Toy 3 security cost is a modeling value used to compare strategies. It is **not a cash payment** and should be interpreted as the modeled economic value of drought protection that is given up when stored water is withdrawn.
