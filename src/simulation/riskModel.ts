@@ -208,18 +208,18 @@ export function runRiskYear(
 
   // Security-building is only considered in years when the player receives
   // enough current allocation to meet normal demand before any voluntary saving.
-  let preliminarySpace=Math.max(0,c.reservoirCapacity-storageAfterWithdraw)
+  // Each account forms its desired security-building deposit independently.
+  // Physical reservoir space is allocated later, pro rata across A, B, and Fed.
   if(allocationA>=c.demandA-1e-9){
     planA=addSecurityInvestment(
-      planA,afterWithdrawA,t.securityTargetA,c.bankLimitA,preliminarySpace,
+      planA,afterWithdrawA,t.securityTargetA,c.bankLimitA,c.reservoirCapacity,
       t.reductionCurveA,t.supplementalCurve,t.securityCostsA,t.step
     )
   }
-  preliminarySpace=Math.max(0,preliminarySpace-planA.securityDeposit)
 
   if(allocationB>=c.demandB-1e-9){
     planB=addSecurityInvestment(
-      planB,afterWithdrawB,t.securityTargetB,c.bankLimitB,preliminarySpace,
+      planB,afterWithdrawB,t.securityTargetB,c.bankLimitB,c.reservoirCapacity,
       t.reductionCurveB,t.supplementalCurve,t.securityCostsB,t.step
     )
   }
