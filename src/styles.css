@@ -73,3 +73,26 @@ th:first-child,td:first-child{text-align:left}
 .fed-card p{font-size:.82rem}
 .fed-inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:700px){.fed-inputs{grid-template-columns:1fr}}
+
+.toy3-curves-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:16px 0}
+.curve-card h2,.concept-card h2{font-size:1.05rem;margin-bottom:4px}
+.curve-card>p,.concept-card>p{font-size:.82rem;color:#66727d;line-height:1.45}
+.curve-chart{width:100%;height:150px;margin:8px 0 4px;overflow:visible}
+.curve-chart line{stroke:#aab5bf;stroke-width:1.2}
+.curve-chart polyline{fill:none;stroke:#245a88;stroke-width:3}
+.curve-chart circle{fill:#245a88}
+.curve-chart text{font-size:10px;fill:#66727d}
+.curve-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.curve-inputs label{font-size:.74rem}
+.curve-inputs label span{display:block;margin-bottom:4px;color:#66727d}
+.security-steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:12px 0}
+.security-step{padding:8px 5px;background:#f6f8fa;border:1px solid #e2e7ec;border-radius:8px;text-align:center}
+.security-step span{display:block;font-size:.68rem;color:#66727d}
+.security-step b{display:block;margin-top:3px;font-size:.8rem}
+.formula-card{display:grid;gap:7px;margin:13px 0;padding:13px;border-radius:10px;background:#f2f6f8;text-align:center}
+.formula-card span{font-size:.76rem;color:#7b8792}
+.toy3-summary{grid-template-columns:repeat(3,minmax(140px,1fr))}
+.toy3-table{min-width:1850px}
+.toy3-basic{grid-template-columns:repeat(4,minmax(140px,1fr))}
+@media(max-width:1050px){.toy3-curves-grid{grid-template-columns:1fr}.toy3-basic{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.toy3-basic{grid-template-columns:1fr}.curve-inputs{grid-template-columns:1fr 1fr}.security-steps{grid-template-columns:1fr}.toy3-summary{grid-template-columns:1fr 1fr}}
