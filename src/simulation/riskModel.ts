@@ -73,6 +73,7 @@ export function generateSecurityValueCurve(
 
   for(let storage=0;storage<=limit+1e-9;storage+=storageStep){
     const scenarios:{baseCost:number;protectedCost:number;baseViolation:boolean}[]=[]
+    // Equally weighted stationary inflow outcomes across the configured range.
     for(let k=0;k<scenarioCount;k++){
       const inflow=c.inflowMin+(c.inflowMax-c.inflowMin)*(k/(scenarioCount-1))
       const a=allocateInflow(inflow,c)
@@ -151,7 +152,6 @@ export function buildToy3Config(
 ):Toy3Config{
   return {
     step:0.1,
-    forecastErrorFraction:0.30,
     reductionCurveA,reductionCurveB,supplementalCurve,
     securityPreferenceA:preferenceA,
     securityPreferenceB:preferenceB,
@@ -280,8 +280,7 @@ export function runRiskYear(
   start:Balances,
   inflow:number,
   t:Toy3Config=defaultToy3Config,
-  c:SimulationConfig=defaultConfig,
-  forecastInflow=inflow
+  c:SimulationConfig=defaultConfig
 ):RiskYearResult{
   const {allocationA,allocationB,federalAllocation}=allocateInflow(inflow,c)
   const shortageA=Math.max(0,c.demandA-allocationA)
@@ -373,7 +372,7 @@ export function runRiskYear(
   const waterBalanceError=(startStorage+inflow)-accountedEnd
 
   return {
-    year,inflow,forecastInflow,forecastErrorFraction:t.forecastErrorFraction,
+    year,inflow,
     allocationA,allocationB,federalAllocation,
     openingBankA:start.A,openingBankB:start.B,openingBankFed:start.Fed,
     bankWithdrawalA:planA.bankWithdrawal,bankWithdrawalB:planB.bankWithdrawal,
