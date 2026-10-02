@@ -3,15 +3,38 @@ export interface MarginalCurve {
   costs:number[];
 }
 
+export interface SecurityPreference {
+  criticalShortage:number;
+  failureTolerance:number;
+}
+
+export interface SecurityValuePoint {
+  storage:number;
+  expectedCost:number;
+  baseFailureProbability:number;
+  constrainedFailureProbability:number;
+  marginalValue:number;
+}
+
+export interface SecurityValueCurve {
+  breaks:number[];
+  costs:number[];
+  points:SecurityValuePoint[];
+  reliabilityStorage:number;
+  reliabilityAchieved:boolean;
+  preference:SecurityPreference;
+}
+
 export interface Toy3Config {
   step:number;
-  securityTargetA:number;
-  securityTargetB:number;
+  forecastErrorFraction:number;
   reductionCurveA:MarginalCurve;
   reductionCurveB:MarginalCurve;
   supplementalCurve:MarginalCurve;
-  securityCostsA:number[];
-  securityCostsB:number[];
+  securityPreferenceA:SecurityPreference;
+  securityPreferenceB:SecurityPreference;
+  securityCurveA:SecurityValueCurve;
+  securityCurveB:SecurityValueCurve;
 }
 
 export interface PlayerRiskPlan {
@@ -29,6 +52,8 @@ export interface PlayerRiskPlan {
 export interface RiskYearResult {
   year:number;
   inflow:number;
+  forecastInflow:number;
+  forecastErrorFraction:number;
   allocationA:number;
   allocationB:number;
   federalAllocation:number;
