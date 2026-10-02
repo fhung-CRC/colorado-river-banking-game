@@ -290,3 +290,37 @@ The Fed has two discretionary release choices from its previously banked account
 Fed releases are treated as withdrawals from previously banked Federal water. They are limited by the Fed account balance and by the same 5 MAF infrastructure-protection floor that limits A and B bank withdrawals. If A/B withdrawal requests plus Fed release requests exceed the water physically available above the floor, eligible requests are reduced pro rata. Current-year deposits do not create same-year withdrawal capacity.
 
 Toy 1 remains the uninterrupted automatic simulation. Toy 2 is the interactive role-play tab.
+
+
+## Toy 3: Risk + Water Security
+
+Toy 3 introduces explicit drought-risk preferences without requiring players to manually enter a storage-value curve. Each player provides only:
+
+- a **critical annual shortage level** in MAF; and
+- an **acceptable probability of exceeding that shortage**.
+
+For example, a player may state that reductions greater than 1.5 MAF should occur in no more than 5% of stationary hydrologic outcomes.
+
+Toy 3 converts that preference into a fixed marginal value of security storage. The curve is generated once under the model's stationary hydrologic assumption and remains unchanged throughout the game. Annual operating decisions change with realized hydrologic conditions, but the security-storage valuation itself does not change from year to year.
+
+The annual Toy 3 objective is:
+
+**Minimize reduction cost + supplemental-water cost + opportunity cost of withdrawing security storage.**
+
+The security term is an economic opportunity/shadow value, not a cash payment. The annual Toy 3 decision does **not** also impose the chance constraint. The chance constraint is used in the valuation step that generates the security-storage curve; applying it again during gameplay would double-count the player's reliability preference.
+
+The valuation routine evaluates candidate storage levels using equally weighted stationary inflow outcomes across the 2–15 MAF range. At each storage level it calculates the least-cost shortage response. If too many hydrologic outcomes exceed the player's critical shortage, the model shifts the least expensive scenarios needed to satisfy the selected failure tolerance toward supplemental supply. The reduction in expected constrained cost from an additional increment of storage becomes the marginal security-storage value.
+
+Rejected A/B security deposits are returned to current-year use when reservoir or account limits prevent the deposit. They are not counted as spill. Excess Federal allocation that cannot be stored remains unbanked/system release.
+
+### Toy 3.1 — Stochastic Storage Valuation
+
+Toy 3.1 is planned as a separate analytical model for estimating and testing the value of storage under uncertainty. Its purpose is not to complicate the game interface, but to provide a more rigorous calibration/validation framework for the simplified Toy 3 security-value curves.
+
+The planned Toy 3.1 formulation will minimize expected economic cost subject to a reliability chance constraint, for example:
+
+**Probability(annual reduction > critical shortage) <= acceptable failure probability.**
+
+Potential future extensions include multi-year stochastic optimization, explicit forecast-error distributions, multiple interacting players, alternative risk metrics such as CVaR, adaptive belief updating, and finite-difference estimates of the marginal value of storage.
+
+For Toy 3 gameplay, the security-value curve remains fixed under hydrologic stationarity and annual decisions use realized inflow directly. Forecast uncertainty is deferred to a future extension.
