@@ -80,10 +80,10 @@ export function generateSecurityValueCurve(
       const rawShortage=Math.max(0,demand-allocation)
       const residual=Math.max(0,rawShortage-Math.min(storage,rawShortage))
       const base=optimizeCashResponse(residual,reductionCurve,supplementalCurve,Infinity,0.05)
-      const protected=optimizeCashResponse(residual,reductionCurve,supplementalCurve,critical,0.05)
+      const protectedPlan=optimizeCashResponse(residual,reductionCurve,supplementalCurve,critical,0.05)
       scenarios.push({
         baseCost:base.cost,
-        protectedCost:protected.cost,
+        protectedCost:protectedPlan.cost,
         baseViolation:base.reduction>critical+1e-9
       })
     }
