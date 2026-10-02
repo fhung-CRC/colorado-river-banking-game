@@ -113,6 +113,50 @@ describe('Toy 3 risk and water security',()=>{
     expect(tight.points[0].expectedCost).toBeGreaterThanOrEqual(loose.points[0].expectedCost-1e-9)
   })
 
+  it('produces non-increasing constrained expected cost as storage increases',async()=>{
+    const {
+      generateSecurityValueCurve, defaultReductionCurveA, defaultSupplementalCurve
+    }=await import('../src/simulation/riskModel')
+    const curve=generateSecurityValueCurve(
+      'A',{criticalShortage:1.5,failureTolerance:0.05},
+      defaultReductionCurveA,defaultSupplementalCurve
+    )
+    for(let i=1;i<curve.points.length;i++){
+      expect(curve.points[i].expectedCost).toBeLessThanOrEqual(curve.points[i-1].expectedCost+1e-9)
+    }
+  })
+
+  it('requires at least as much reliability storage when failure tolerance tightens',async()=>{
+    const {
+      generateSecurityValueCurve, defaultReductionCurveA, defaultSupplementalCurve
+    }=await import('../src/simulation/riskModel')
+    const loose=generateSecurityValueCurve(
+      'A',{criticalShortage:1.5,failureTolerance:0.20},
+      defaultReductionCurveA,defaultSupplementalCurve
+    )
+    const tight=generateSecurityValueCurve(
+      'A',{criticalShortage:1.5,failureTolerance:0.05},
+      defaultReductionCurveA,defaultSupplementalCurve
+    )
+    expect(tight.reliabilityStorage).toBeGreaterThanOrEqual(loose.reliabilityStorage-1e-9)
+  })
+
+  it('does not make stricter shortage protection cheaper at zero storage',async()=>{
+    const {
+      generateSecurityValueCurve, defaultReductionCurveA, defaultSupplementalCurve
+    }=await import('../src/simulation/riskModel')
+    const lenient=generateSecurityValueCurve(
+      'A',{criticalShortage:2.5,failureTolerance:0.05},
+      defaultReductionCurveA,defaultSupplementalCurve
+    )
+    const strict=generateSecurityValueCurve(
+      'A',{criticalShortage:1.0,failureTolerance:0.05},
+      defaultReductionCurveA,defaultSupplementalCurve
+    )
+    expect(strict.points[0].expectedCost).toBeGreaterThanOrEqual(lenient.points[0].expectedCost-1e-9)
+    expect(strict.reliabilityStorage).toBeGreaterThanOrEqual(lenient.reliabilityStorage-1e-9)
+  })
+
   it('can switch strategies when marginal curves cross',async()=>{
     const {
       optimizeShortage, generateSecurityValueCurve
