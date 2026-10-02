@@ -294,24 +294,33 @@ Toy 1 remains the uninterrupted automatic simulation. Toy 2 is the interactive r
 
 ## Toy 3: Risk + Water Security
 
-Toy 3 introduces an explicit reason to bank water: protection against costly future drought. Each player chooses a **security target**, expressed as a desired amount of banked storage. The target is not a hard withdrawal floor; it represents the player's preferred drought-protection position.
+Toy 3 introduces explicit drought-risk preferences without requiring players to manually enter a storage-value curve. Each player provides only:
 
-Toy 3 replaces the fixed one-price shortage response with three competing marginal-cost relationships:
+- a **critical annual shortage level** in MAF; and
+- an **acceptable probability of exceeding that shortage**.
 
-1. **Demand-reduction marginal cost** — low-cost reductions are used first, while deeper reductions become progressively more expensive.
-2. **Supplemental-water marginal cost** — alternative supplies can also become more expensive as larger quantities are needed.
-3. **Lost-security marginal cost** — withdrawing banked water carries an implicit opportunity/risk cost that rises as the player's remaining storage falls relative to the selected security target.
+For example, a player may state that reductions greater than 1.5 MAF should occur in no more than 5% of stationary hydrologic outcomes.
 
-The three curves can cross. As a result, there is no fixed rule that banked water, conservation, or supplemental supply must always be used first. The preferred response can change with the size of the shortage and with the player's current storage position.
+Toy 3 converts that preference into a fixed marginal value of security storage. The curve is generated once under the model's stationary hydrologic assumption and remains unchanged throughout the game. Annual operating decisions may change with hydrologic conditions and forecasts, but the security-storage valuation itself does not change from year to year.
 
-The first Toy 3 implementation uses editable **piecewise marginal-cost curves** rather than a fitted exponential or logistic equation. This keeps the assumptions transparent and lets users specify economically meaningful cost tranches directly. The interface displays the curves graphically.
+The annual Toy 3 objective is:
 
-Toy 3 runs as a continuous multi-year simulation. In each year it:
-- allocates current inflow by the same senior/junior rules used in Toys 1 and 2;
-- compares incremental marginal costs for shortage response;
-- respects account balances and the 5 MAF physical infrastructure floor;
-- allows players to preserve current allocation in storage when rebuilding security is worth more than the marginal cost of doing so;
-- reports cash costs separately from implicit lost-security costs; and
-- tracks security coverage, years below target, and minimum security coverage.
+**Minimize reduction cost + supplemental-water cost + opportunity cost of withdrawing security storage.**
 
-The current Toy 3 security cost is a modeling value used to compare strategies. It is **not a cash payment** and should be interpreted as the modeled economic value of drought protection that is given up when stored water is withdrawn.
+The security term is an economic opportunity/shadow value, not a cash payment. The annual Toy 3 decision does **not** also impose the chance constraint. The chance constraint is used in the valuation step that generates the security-storage curve; applying it again during gameplay would double-count the player's reliability preference.
+
+The valuation routine evaluates candidate storage levels over the stationary 2–15 MAF inflow range. At each storage level it calculates the least-cost shortage response. If too many hydrologic outcomes exceed the player's critical shortage, the model shifts the least expensive scenarios needed to satisfy the selected failure tolerance toward supplemental supply. The reduction in expected constrained cost from an additional increment of storage becomes the marginal security-storage value.
+
+Rejected A/B security deposits are returned to current-year use when reservoir or account limits prevent the deposit. They are not counted as spill. Excess Federal allocation that cannot be stored remains unbanked/system release.
+
+### Toy 3.1 — Stochastic Storage Valuation
+
+Toy 3.1 is planned as a separate analytical model for estimating and testing the value of storage under uncertainty. Its purpose is not to complicate the game interface, but to provide a more rigorous calibration/validation framework for the simplified Toy 3 security-value curves.
+
+The planned Toy 3.1 formulation will minimize expected economic cost subject to a reliability chance constraint, for example:
+
+**Probability(annual reduction > critical shortage) <= acceptable failure probability.**
+
+Potential future extensions include multi-year stochastic optimization, explicit forecast-error distributions, multiple interacting players, alternative risk metrics such as CVaR, adaptive belief updating, and finite-difference estimates of the marginal value of storage.
+
+For Toy 3 gameplay, the security-value curve remains fixed under hydrologic stationarity. A planned annual forecast with approximately ±30% error will affect current operating decisions, but will not revalue the security-storage curve each year.
