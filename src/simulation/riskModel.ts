@@ -1,28 +1,25 @@
 import { allocateInflow, defaultConfig, proRataWithdraw } from './model'
 import type { Balances, SimulationConfig } from './types'
-import type { MarginalCurve, PlayerRiskPlan, RiskYearResult, Toy3Config } from './riskTypes'
+import type {
+  MarginalCurve, PlayerRiskPlan, RiskYearResult, SecurityPreference,
+  SecurityValueCurve, SecurityValuePoint, Toy3Config
+} from './riskTypes'
 
-export const defaultToy3Config:Toy3Config={
-  step:0.1,
-  securityTargetA:4,
-  securityTargetB:3,
-  reductionCurveA:{
-    breaks:[0.5,1,2,3,5],
-    costs:[30,60,120,250,600]
-  },
-  reductionCurveB:{
-    breaks:[0.5,1,2,3,5],
-    costs:[20,40,80,180,500]
-  },
-  supplementalCurve:{
-    breaks:[0.5,1,1.5,2,5],
-    costs:[60,90,140,220,800]
-  },
-  // Costs correspond to ending storage coverage bands:
-  // >=100%, 75-100%, 50-75%, 25-50%, <25% of the security target.
-  securityCostsA:[20,60,140,300,700],
-  securityCostsB:[20,60,140,300,700]
+export const defaultReductionCurveA:MarginalCurve={
+  breaks:[0.5,1,2,3,5],
+  costs:[30,60,120,250,600]
 }
+export const defaultReductionCurveB:MarginalCurve={
+  breaks:[0.5,1,2,3,5],
+  costs:[20,40,80,180,500]
+}
+export const defaultSupplementalCurve:MarginalCurve={
+  breaks:[0.5,1,1.5,2,5],
+  costs:[60,90,140,220,800]
+}
+
+export const defaultPreferenceA:SecurityPreference={criticalShortage:1.5,failureTolerance:0.05}
+export const defaultPreferenceB:SecurityPreference={criticalShortage:2.0,failureTolerance:0.10}
 
 export function marginalCurveCost(quantityUsed:number,curve:MarginalCurve){
   for(let i=0;i<curve.breaks.length;i++){
@@ -31,15 +28,139 @@ export function marginalCurveCost(quantityUsed:number,curve:MarginalCurve){
   return Math.max(0,curve.costs[curve.costs.length-1]??0)
 }
 
-export function securityMarginalCost(remainingBank:number,target:number,costs:number[]){
-  if(target<=1e-9) return 0
-  const coverage=Math.max(0,remainingBank)/target
-  if(coverage>=1) return Math.max(0,costs[0]??0)
-  if(coverage>=0.75) return Math.max(0,costs[1]??0)
-  if(coverage>=0.5) return Math.max(0,costs[2]??0)
-  if(coverage>=0.25) return Math.max(0,costs[3]??0)
-  return Math.max(0,costs[4]??0)
+function optimizeCashResponse(
+  shortage:number,
+  reductionCurve:MarginalCurve,
+  supplementalCurve:MarginalCurve,
+  maxReduction=Infinity,
+  step=0.05
+){
+  let remaining=Math.max(0,shortage)
+  let reduction=0
+  let supplemental=0
+  let cost=0
+  while(remaining>1e-9){
+    const q=Math.min(step,remaining)
+    const reductionAllowed=reduction+q<=maxReduction+1e-9
+    const rCost=reductionAllowed?marginalCurveCost(reduction,reductionCurve):Infinity
+    const sCost=marginalCurveCost(supplemental,supplementalCurve)
+    if(rCost<=sCost){
+      reduction+=q
+      cost+=q*rCost
+    }else{
+      supplemental+=q
+      cost+=q*sCost
+    }
+    remaining-=q
+  }
+  return {reduction,supplemental,cost}
 }
+
+export function generateSecurityValueCurve(
+  player:'A'|'B',
+  preference:SecurityPreference,
+  reductionCurve:MarginalCurve,
+  supplementalCurve:MarginalCurve,
+  c:SimulationConfig=defaultConfig,
+  storageStep=0.25,
+  scenarioCount=261
+):SecurityValueCurve{
+  const limit=player==='A'?c.bankLimitA:c.bankLimitB
+  const demand=player==='A'?c.demandA:c.demandB
+  const epsilon=Math.min(0.5,Math.max(0,preference.failureTolerance))
+  const critical=Math.max(0,preference.criticalShortage)
+  const points:SecurityValuePoint[]=[]
+
+  for(let storage=0;storage<=limit+1e-9;storage+=storageStep){
+    const scenarios:{baseCost:number;protectedCost:number;baseViolation:boolean}[]=[]
+    for(let k=0;k<scenarioCount;k++){
+      const inflow=c.inflowMin+(c.inflowMax-c.inflowMin)*(k/(scenarioCount-1))
+      const a=allocateInflow(inflow,c)
+      const allocation=player==='A'?a.allocationA:a.allocationB
+      const rawShortage=Math.max(0,demand-allocation)
+      const residual=Math.max(0,rawShortage-Math.min(storage,rawShortage))
+      const base=optimizeCashResponse(residual,reductionCurve,supplementalCurve,Infinity,0.05)
+      const protected=optimizeCashResponse(residual,reductionCurve,supplementalCurve,critical,0.05)
+      scenarios.push({
+        baseCost:base.cost,
+        protectedCost:protected.cost,
+        baseViolation:base.reduction>critical+1e-9
+      })
+    }
+
+    const violating=scenarios
+      .map((s,i)=>({i,increment:Math.max(0,s.protectedCost-s.baseCost),violation:s.baseViolation}))
+      .filter(x=>x.violation)
+      .sort((a,b)=>a.increment-b.increment)
+
+    const allowedViolations=Math.floor(epsilon*scenarioCount+1e-9)
+    const mustProtect=Math.max(0,violating.length-allowedViolations)
+    const protectedSet=new Set(violating.slice(0,mustProtect).map(x=>x.i))
+    let total=0
+    for(let i=0;i<scenarios.length;i++){
+      total+=protectedSet.has(i)?scenarios[i].protectedCost:scenarios[i].baseCost
+    }
+    const baseFailureProbability=violating.length/scenarioCount
+    const constrainedFailureProbability=Math.max(0,violating.length-mustProtect)/scenarioCount
+    points.push({
+      storage:Number(storage.toFixed(6)),
+      expectedCost:total/scenarioCount,
+      baseFailureProbability,
+      constrainedFailureProbability,
+      marginalValue:0
+    })
+  }
+
+  for(let i=0;i<points.length;i++){
+    if(i===points.length-1){
+      points[i].marginalValue=i>0?points[i-1].marginalValue:0
+    }else{
+      const ds=points[i+1].storage-points[i].storage
+      points[i].marginalValue=Math.max(0,(points[i].expectedCost-points[i+1].expectedCost)/ds)
+    }
+  }
+
+  const reliabilityPoint=points.find(p=>p.baseFailureProbability<=epsilon+1e-9)
+  const reliabilityStorage=reliabilityPoint?.storage??limit
+  const breaks=points.slice(1).map(p=>p.storage)
+  const costs=points.slice(0,-1).map(p=>p.marginalValue)
+  if(costs.length===0){ breaks.push(limit); costs.push(0) }
+
+  return {
+    breaks,costs,points,reliabilityStorage,
+    reliabilityAchieved:!!reliabilityPoint,
+    preference:{criticalShortage:critical,failureTolerance:epsilon}
+  }
+}
+
+export function securityMarginalCost(remainingBank:number,curve:SecurityValueCurve){
+  const s=Math.max(0,remainingBank)
+  for(let i=0;i<curve.breaks.length;i++){
+    if(s<curve.breaks[i]-1e-9) return Math.max(0,curve.costs[i]??0)
+  }
+  return 0
+}
+
+export function buildToy3Config(
+  preferenceA:SecurityPreference=defaultPreferenceA,
+  preferenceB:SecurityPreference=defaultPreferenceB,
+  reductionCurveA:MarginalCurve=defaultReductionCurveA,
+  reductionCurveB:MarginalCurve=defaultReductionCurveB,
+  supplementalCurve:MarginalCurve=defaultSupplementalCurve,
+  c:SimulationConfig=defaultConfig
+):Toy3Config{
+  return {
+    step:0.1,
+    forecastErrorFraction:0.30,
+    reductionCurveA,reductionCurveB,supplementalCurve,
+    securityPreferenceA:preferenceA,
+    securityPreferenceB:preferenceB,
+    securityCurveA:generateSecurityValueCurve('A',preferenceA,reductionCurveA,supplementalCurve,c),
+    securityCurveB:generateSecurityValueCurve('B',preferenceB,reductionCurveB,supplementalCurve,c)
+  }
+}
+
+export const defaultToy3Config=buildToy3Config()
 
 function chooseCheapest(candidates:{kind:'bank'|'supplemental'|'reduction';cost:number}[]){
   return [...candidates].sort((a,b)=>a.cost-b.cost || order(a.kind)-order(b.kind))[0]
@@ -57,8 +178,7 @@ export function optimizeShortage(
   bankWithdrawalCap:number,
   reductionCurve:MarginalCurve,
   supplementalCurve:MarginalCurve,
-  securityTarget:number,
-  securityCosts:number[],
+  securityCurve:SecurityValueCurve,
   step:number
 ):PlayerRiskPlan{
   let remaining=Math.max(0,shortage)
@@ -76,8 +196,8 @@ export function optimizeShortage(
     ]
     if(bankWithdrawal+q<=Math.min(openingBank,bankWithdrawalCap)+1e-9){
       candidates.push({
-        kind:'bank' as const,
-        cost:securityMarginalCost(openingBank-bankWithdrawal-q,securityTarget,securityCosts)
+        kind:'bank',
+        cost:securityMarginalCost(openingBank-bankWithdrawal-q,securityCurve)
       })
     }
 
@@ -105,28 +225,24 @@ export function optimizeShortage(
 export function addSecurityInvestment(
   base:PlayerRiskPlan,
   bankAfterWithdrawal:number,
-  securityTarget:number,
   accountLimit:number,
   physicalSpace:number,
   reductionCurve:MarginalCurve,
   supplementalCurve:MarginalCurve,
-  securityCosts:number[],
+  securityCurve:SecurityValueCurve,
   step:number
 ):PlayerRiskPlan{
   const plan={...base}
   let bank=bankAfterWithdrawal
   let remainingSpace=Math.max(0,physicalSpace)
-  const target=Math.min(Math.max(0,securityTarget),accountLimit)
 
-  while(bank+1e-9<target && bank+1e-9<accountLimit && remainingSpace>1e-9){
-    const q=Math.min(step,target-bank,accountLimit-bank,remainingSpace)
+  while(bank+1e-9<accountLimit && remainingSpace>1e-9){
+    const q=Math.min(step,accountLimit-bank,remainingSpace)
     if(q<=1e-9) break
-
-    const securityBenefit=securityMarginalCost(bank,securityTarget,securityCosts)
+    const securityBenefit=securityMarginalCost(bank,securityCurve)
     const reductionCost=marginalCurveCost(plan.reduction,reductionCurve)
     const supplementalCost=marginalCurveCost(plan.supplemental,supplementalCurve)
     const fundingCost=Math.min(reductionCost,supplementalCost)
-
     if(fundingCost+1e-9>=securityBenefit) break
 
     plan.securityDeposit+=q
@@ -139,11 +255,9 @@ export function addSecurityInvestment(
       plan.depositViaSupplemental+=q
       plan.cashCost+=q*supplementalCost
     }
-
     bank+=q
     remainingSpace-=q
   }
-
   plan.decisionCost=plan.cashCost+plan.securityCost
   return plan
 }
@@ -166,39 +280,31 @@ export function runRiskYear(
   start:Balances,
   inflow:number,
   t:Toy3Config=defaultToy3Config,
-  c:SimulationConfig=defaultConfig
+  c:SimulationConfig=defaultConfig,
+  forecastInflow=inflow
 ):RiskYearResult{
   const {allocationA,allocationB,federalAllocation}=allocateInflow(inflow,c)
   const shortageA=Math.max(0,c.demandA-allocationA)
   const shortageB=Math.max(0,c.demandB-allocationB)
 
-  // First pass: each player identifies the bank withdrawal it would prefer
-  // if only its own account constrained access.
   const desiredA=optimizeShortage(
-    shortageA,start.A,start.A,t.reductionCurveA,t.supplementalCurve,
-    t.securityTargetA,t.securityCostsA,t.step
+    shortageA,start.A,start.A,t.reductionCurveA,t.supplementalCurve,t.securityCurveA,t.step
   )
   const desiredB=optimizeShortage(
-    shortageB,start.B,start.B,t.reductionCurveB,t.supplementalCurve,
-    t.securityTargetB,t.securityCostsB,t.step
+    shortageB,start.B,start.B,t.reductionCurveB,t.supplementalCurve,t.securityCurveB,t.step
   )
 
-  // Shared reservoir liquidity above the infrastructure floor is still
-  // allocated pro rata across eligible A/B bank-withdrawal requests.
   const allowed=proRataWithdraw(
     start,
     {A:desiredA.bankWithdrawal,B:desiredB.bankWithdrawal,Fed:0},
     c.infrastructureFloor
   )
 
-  // Second pass: re-optimize with the physically available bank withdrawal cap.
   let planA=optimizeShortage(
-    shortageA,start.A,allowed.A,t.reductionCurveA,t.supplementalCurve,
-    t.securityTargetA,t.securityCostsA,t.step
+    shortageA,start.A,allowed.A,t.reductionCurveA,t.supplementalCurve,t.securityCurveA,t.step
   )
   let planB=optimizeShortage(
-    shortageB,start.B,allowed.B,t.reductionCurveB,t.supplementalCurve,
-    t.securityTargetB,t.securityCostsB,t.step
+    shortageB,start.B,allowed.B,t.reductionCurveB,t.supplementalCurve,t.securityCurveB,t.step
   )
 
   const afterWithdrawA=start.A-planA.bankWithdrawal
@@ -206,37 +312,27 @@ export function runRiskYear(
   const afterWithdrawFed=start.Fed
   const storageAfterWithdraw=afterWithdrawA+afterWithdrawB+afterWithdrawFed
 
-  // Security-building is only considered in years when the player receives
-  // enough current allocation to meet normal demand before any voluntary saving.
-  // Each account forms its desired security-building deposit independently.
-  // Physical reservoir space is allocated later, pro rata across A, B, and Fed.
   if(allocationA>=c.demandA-1e-9){
     planA=addSecurityInvestment(
-      planA,afterWithdrawA,t.securityTargetA,c.bankLimitA,c.reservoirCapacity,
-      t.reductionCurveA,t.supplementalCurve,t.securityCostsA,t.step
+      planA,afterWithdrawA,c.bankLimitA,c.reservoirCapacity,
+      t.reductionCurveA,t.supplementalCurve,t.securityCurveA,t.step
     )
   }
-
   if(allocationB>=c.demandB-1e-9){
     planB=addSecurityInvestment(
-      planB,afterWithdrawB,t.securityTargetB,c.bankLimitB,c.reservoirCapacity,
-      t.reductionCurveB,t.supplementalCurve,t.securityCostsB,t.step
+      planB,afterWithdrawB,c.bankLimitB,c.reservoirCapacity,
+      t.reductionCurveB,t.supplementalCurve,t.securityCurveB,t.step
     )
   }
 
-  // Requested deposits are capped by each account before competing for
-  // remaining physical reservoir space.
   const reqDepA=Math.min(planA.securityDeposit,Math.max(0,c.bankLimitA-afterWithdrawA))
   const reqDepB=Math.min(planB.securityDeposit,Math.max(0,c.bankLimitB-afterWithdrawB))
   const reqDepFed=Math.min(federalAllocation,Math.max(0,c.bankLimitFed-afterWithdrawFed))
   const physicalSpace=Math.max(0,c.reservoirCapacity-storageAfterWithdraw)
   const accepted=prorateDeposits({A:reqDepA,B:reqDepB,Fed:reqDepFed},physicalSpace)
 
-  // If physical storage competition trims a requested security deposit,
-  // trim the corresponding current-year substitution action proportionally.
   const scaleA=reqDepA>1e-9?accepted.A/reqDepA:0
   const scaleB=reqDepB>1e-9?accepted.B/reqDepB:0
-
   const actualSecurityDepositA=accepted.A
   const actualSecurityDepositB=accepted.B
   const actualDepViaReductionA=planA.depositViaReduction*scaleA
@@ -244,8 +340,6 @@ export function runRiskYear(
   const actualDepViaSupplementalA=planA.depositViaSupplemental*scaleA
   const actualDepViaSupplementalB=planB.depositViaSupplemental*scaleB
 
-  // Remove costs associated with rejected security-building deposits.
-  // Shortage-response actions are untouched.
   const rejectedReductionA=planA.depositViaReduction-actualDepViaReductionA
   const rejectedReductionB=planB.depositViaReduction-actualDepViaReductionB
   const rejectedSupplementalA=planA.depositViaSupplemental-actualDepViaSupplementalA
@@ -256,7 +350,6 @@ export function runRiskYear(
   const adjustedSupplementalA=planA.supplemental-rejectedSupplementalA
   const adjustedSupplementalB=planB.supplemental-rejectedSupplementalB
 
-  // Recompute cash costs exactly from the realized nonlinear quantities.
   const cashCostA=integratedCurveCost(adjustedReductionA,t.reductionCurveA,t.step)
     +integratedCurveCost(adjustedSupplementalA,t.supplementalCurve,t.step)
   const cashCostB=integratedCurveCost(adjustedReductionB,t.reductionCurveB,t.step)
@@ -267,11 +360,10 @@ export function runRiskYear(
   const endBankFed=afterWithdrawFed+accepted.Fed
   const totalStorage=endBankA+endBankB+endBankFed
 
+  // Rejected A/B security deposits revert to current-year use. They are not spill.
   const directUseA=Math.max(0,Math.min(allocationA,c.demandA)-actualSecurityDepositA)
   const directUseB=Math.max(0,Math.min(allocationB,c.demandB)-actualSecurityDepositB)
-
-  const spillUnbanked=
-    (reqDepA-accepted.A)+(reqDepB-accepted.B)+(federalAllocation-accepted.Fed)
+  const spillUnbanked=federalAllocation-accepted.Fed
 
   const startStorage=start.A+start.B+start.Fed
   const accountedEnd=
@@ -281,7 +373,8 @@ export function runRiskYear(
   const waterBalanceError=(startStorage+inflow)-accountedEnd
 
   return {
-    year,inflow,allocationA,allocationB,federalAllocation,
+    year,inflow,forecastInflow,forecastErrorFraction:t.forecastErrorFraction,
+    allocationA,allocationB,federalAllocation,
     openingBankA:start.A,openingBankB:start.B,openingBankFed:start.Fed,
     bankWithdrawalA:planA.bankWithdrawal,bankWithdrawalB:planB.bankWithdrawal,
     supplementalA:adjustedSupplementalA,supplementalB:adjustedSupplementalB,
@@ -296,8 +389,8 @@ export function runRiskYear(
     decisionCostA:cashCostA+planA.securityCost,
     decisionCostB:cashCostB+planB.securityCost,
     endBankA,endBankB,endBankFed,totalStorage,
-    securityCoverageA:coverage(endBankA,t.securityTargetA),
-    securityCoverageB:coverage(endBankB,t.securityTargetB),
+    securityCoverageA:coverage(endBankA,t.securityCurveA.reliabilityStorage),
+    securityCoverageB:coverage(endBankB,t.securityCurveB.reliabilityStorage),
     spillUnbanked,waterBalanceError
   }
 }
