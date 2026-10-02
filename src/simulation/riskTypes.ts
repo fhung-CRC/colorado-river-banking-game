@@ -27,7 +27,6 @@ export interface SecurityValueCurve {
 
 export interface Toy3Config {
   step:number;
-  forecastErrorFraction:number;
   reductionCurveA:MarginalCurve;
   reductionCurveB:MarginalCurve;
   supplementalCurve:MarginalCurve;
@@ -52,8 +51,6 @@ export interface PlayerRiskPlan {
 export interface RiskYearResult {
   year:number;
   inflow:number;
-  forecastInflow:number;
-  forecastErrorFraction:number;
   allocationA:number;
   allocationB:number;
   federalAllocation:number;
