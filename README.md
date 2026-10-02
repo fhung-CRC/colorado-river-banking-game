@@ -301,7 +301,7 @@ Toy 3 introduces explicit drought-risk preferences without requiring players to 
 
 For example, a player may state that reductions greater than 1.5 MAF should occur in no more than 5% of stationary hydrologic outcomes.
 
-Toy 3 converts that preference into a fixed marginal value of security storage. The curve is generated once under the model's stationary hydrologic assumption and remains unchanged throughout the game. Annual operating decisions may change with hydrologic conditions and forecasts, but the security-storage valuation itself does not change from year to year.
+Toy 3 converts that preference into a fixed marginal value of security storage. The curve is generated once under the model's stationary hydrologic assumption and remains unchanged throughout the game. Annual operating decisions change with realized hydrologic conditions, but the security-storage valuation itself does not change from year to year.
 
 The annual Toy 3 objective is:
 
@@ -309,7 +309,7 @@ The annual Toy 3 objective is:
 
 The security term is an economic opportunity/shadow value, not a cash payment. The annual Toy 3 decision does **not** also impose the chance constraint. The chance constraint is used in the valuation step that generates the security-storage curve; applying it again during gameplay would double-count the player's reliability preference.
 
-The valuation routine evaluates candidate storage levels over the stationary 2–15 MAF inflow range. At each storage level it calculates the least-cost shortage response. If too many hydrologic outcomes exceed the player's critical shortage, the model shifts the least expensive scenarios needed to satisfy the selected failure tolerance toward supplemental supply. The reduction in expected constrained cost from an additional increment of storage becomes the marginal security-storage value.
+The valuation routine evaluates candidate storage levels using equally weighted stationary inflow outcomes across the 2–15 MAF range. At each storage level it calculates the least-cost shortage response. If too many hydrologic outcomes exceed the player's critical shortage, the model shifts the least expensive scenarios needed to satisfy the selected failure tolerance toward supplemental supply. The reduction in expected constrained cost from an additional increment of storage becomes the marginal security-storage value.
 
 Rejected A/B security deposits are returned to current-year use when reservoir or account limits prevent the deposit. They are not counted as spill. Excess Federal allocation that cannot be stored remains unbanked/system release.
 
@@ -323,4 +323,4 @@ The planned Toy 3.1 formulation will minimize expected economic cost subject to 
 
 Potential future extensions include multi-year stochastic optimization, explicit forecast-error distributions, multiple interacting players, alternative risk metrics such as CVaR, adaptive belief updating, and finite-difference estimates of the marginal value of storage.
 
-For Toy 3 gameplay, the security-value curve remains fixed under hydrologic stationarity. A planned annual forecast with approximately ±30% error will affect current operating decisions, but will not revalue the security-storage curve each year.
+For Toy 3 gameplay, the security-value curve remains fixed under hydrologic stationarity and annual decisions use realized inflow directly. Forecast uncertainty is deferred to a future extension.
