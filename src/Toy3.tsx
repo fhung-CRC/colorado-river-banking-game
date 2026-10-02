@@ -6,7 +6,7 @@ import {
   runRiskYear
 } from './simulation/riskModel'
 import type { Balances, SimulationConfig } from './simulation/types'
-import type { MarginalCurve, RiskYearResult, SecurityPreference, SecurityValueCurve } from './simulation/riskTypes'
+import type { RiskYearResult, SecurityPreference, SecurityValueCurve } from './simulation/riskTypes'
 
 const fmt=(v:number)=>v.toFixed(2)
 
@@ -86,7 +86,7 @@ export default function Toy3(p:Toy3Props){
     const n=Math.min(100,Math.max(1,p.years))
     for(let y=1;y<=n;y++){
       const inflow=p.config.inflowMin+rand()*(p.config.inflowMax-p.config.inflowMin)
-      const r=runRiskYear(y,balances,inflow,toy3,p.config,inflow)
+      const r=runRiskYear(y,balances,inflow,toy3,p.config)
       balances={A:r.endBankA,B:r.endBankB,Fed:r.endBankFed}
       out.push(r)
     }
@@ -160,13 +160,13 @@ export default function Toy3(p:Toy3Props){
         <SecurityCurveSummary name="Player B" curve={toy3.securityCurveB}/>
       </div>
       {showSupplement&&<div className="supplement">
-        <p><strong>How the curve is generated.</strong> For each possible opening storage level, the model samples the stationary 2–15 MAF inflow range, minimizes shortage-response cost, and then applies the player’s reliability requirement. When the unconstrained least-cost response violates the critical-shortage threshold too often, the cheapest hydrologic outcomes to protect are shifted toward supplemental supply until the allowed failure rate is met. The expected-cost reduction from an additional increment of storage becomes the marginal security-storage value.</p>
+        <p><strong>How the curve is generated.</strong> For each possible opening storage level, the model uses equally weighted stationary inflow outcomes across the 2–15 MAF range, minimizes shortage-response cost, and then applies the player’s reliability requirement. When the unconstrained least-cost response violates the critical-shortage threshold too often, the cheapest hydrologic outcomes to protect are shifted toward supplemental supply until the allowed failure rate is met. The expected-cost reduction from an additional increment of storage becomes the marginal security-storage value.</p>
         <div className="supplement-grid">
           <CurveTable name="Player A" curve={toy3.securityCurveA}/>
           <CurveTable name="Player B" curve={toy3.securityCurveB}/>
         </div>
         <div className="assumption-box">
-          <strong>Current simplification:</strong> the security-value curve is fixed under hydrologic stationarity. The planned ±30% annual forecast error will affect annual operating decisions, but it does not revalue the security curve each year.
+          <strong>Current simplification:</strong> the security-value curve is fixed under hydrologic stationarity, and Toy 3 uses the realized annual inflow directly. Forecast error is intentionally deferred to a future version.
         </div>
       </div>}
     </section>
