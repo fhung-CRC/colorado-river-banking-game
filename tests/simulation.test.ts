@@ -74,6 +74,7 @@ describe('accounting',()=>{
 })
 
 
+
 describe('Toy 3 risk and water security',()=>{
   it('uses piecewise nonlinear marginal costs',async()=>{
     const { marginalCurveCost }=await import('../src/simulation/riskModel')
@@ -83,32 +84,63 @@ describe('Toy 3 risk and water security',()=>{
     expect(marginalCurveCost(1.4,curve)).toBe(120)
   })
 
-  it('raises lost-security cost as storage coverage falls',async()=>{
-    const { securityMarginalCost }=await import('../src/simulation/riskModel')
-    const costs=[20,60,140,300,700]
-    expect(securityMarginalCost(4,4,costs)).toBe(20)
-    expect(securityMarginalCost(3.5,4,costs)).toBe(60)
-    expect(securityMarginalCost(2.5,4,costs)).toBe(140)
-    expect(securityMarginalCost(1.5,4,costs)).toBe(300)
-    expect(securityMarginalCost(0.5,4,costs)).toBe(700)
+  it('generates a fixed security-value curve from shortage and failure preferences',async()=>{
+    const {
+      generateSecurityValueCurve, defaultReductionCurveA, defaultSupplementalCurve
+    }=await import('../src/simulation/riskModel')
+    const curve=generateSecurityValueCurve(
+      'A',{criticalShortage:1.5,failureTolerance:0.05},
+      defaultReductionCurveA,defaultSupplementalCurve
+    )
+    expect(curve.points.length).toBeGreaterThan(10)
+    expect(curve.preference.criticalShortage).toBe(1.5)
+    expect(curve.preference.failureTolerance).toBe(0.05)
+    expect(curve.points.every(p=>p.marginalValue>=0)).toBe(true)
+  })
+
+  it('tighter failure tolerance does not reduce the constrained expected cost at zero storage',async()=>{
+    const {
+      generateSecurityValueCurve, defaultReductionCurveA, defaultSupplementalCurve
+    }=await import('../src/simulation/riskModel')
+    const loose=generateSecurityValueCurve(
+      'A',{criticalShortage:1.5,failureTolerance:0.20},
+      defaultReductionCurveA,defaultSupplementalCurve
+    )
+    const tight=generateSecurityValueCurve(
+      'A',{criticalShortage:1.5,failureTolerance:0.05},
+      defaultReductionCurveA,defaultSupplementalCurve
+    )
+    expect(tight.points[0].expectedCost).toBeGreaterThanOrEqual(loose.points[0].expectedCost-1e-9)
   })
 
   it('can switch strategies when marginal curves cross',async()=>{
-    const { optimizeShortage }=await import('../src/simulation/riskModel')
+    const {
+      optimizeShortage, generateSecurityValueCurve
+    }=await import('../src/simulation/riskModel')
     const reduction={breaks:[0.5,1,2],costs:[20,120,300]}
     const supplemental={breaks:[0.5,1,2],costs:[80,90,200]}
-    const p=optimizeShortage(1.5,0,0,reduction,supplemental,0,[0,0,0,0,0],0.5)
+    const security=generateSecurityValueCurve(
+      'A',{criticalShortage:5,failureTolerance:0.5},
+      reduction,supplemental
+    )
+    const p=optimizeShortage(1.5,0,0,reduction,supplemental,security,0.5)
     expect(p.reduction).toBeCloseTo(0.5)
     expect(p.supplemental).toBeCloseTo(1)
   })
 
-  it('preserves banked water when lost-security cost exceeds alternatives',async()=>{
-    const { optimizeShortage }=await import('../src/simulation/riskModel')
+  it('uses the generated security value as an opportunity cost of bank withdrawal',async()=>{
+    const {
+      optimizeShortage, generateSecurityValueCurve
+    }=await import('../src/simulation/riskModel')
     const reduction={breaks:[5],costs:[100]}
     const supplemental={breaks:[5],costs:[120]}
-    const p=optimizeShortage(1,2,2,reduction,supplemental,2,[20,200,400,700,1000],0.5)
-    expect(p.bankWithdrawal).toBeCloseTo(0)
-    expect(p.reduction).toBeCloseTo(1)
+    const security=generateSecurityValueCurve(
+      'A',{criticalShortage:0.2,failureTolerance:0},
+      reduction,supplemental
+    )
+    const p=optimizeShortage(1,2,2,reduction,supplemental,security,0.25)
+    expect(p.decisionCost).toBeCloseTo(p.cashCost+p.securityCost)
+    expect(p.bankWithdrawal+p.reduction+p.supplemental).toBeCloseTo(1)
   })
 
   it('maintains physical and water-balance constraints in a risk year',async()=>{
@@ -116,6 +148,22 @@ describe('Toy 3 risk and water security',()=>{
     const r=runRiskYear(1,{A:4,B:3,Fed:1},6,defaultToy3Config)
     expect(r.totalStorage).toBeLessThanOrEqual(defaultConfig.reservoirCapacity+1e-9)
     expect(r.totalStorage).toBeGreaterThanOrEqual(defaultConfig.infrastructureFloor-1e-9)
+    expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
+  })
+
+  it('returns rejected A/B security deposits to use instead of counting them as spill',async()=>{
+    const { runRiskYear, buildToy3Config }=await import('../src/simulation/riskModel')
+    const c={...defaultConfig,reservoirCapacity:10,bankLimitA:10,bankLimitB:10,bankLimitFed:5}
+    const t=buildToy3Config(
+      {criticalShortage:0,failureTolerance:0},
+      {criticalShortage:0,failureTolerance:0},
+      {breaks:[5],costs:[1]},
+      {breaks:[5],costs:[1]},
+      {breaks:[5],costs:[1000]},
+      c
+    )
+    const r=runRiskYear(1,{A:4.9,B:4.9,Fed:0},10,t,c)
+    expect(r.totalStorage).toBeLessThanOrEqual(10+1e-9)
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
 })
