@@ -285,6 +285,8 @@ export function runRiskYear(
   const {allocationA,allocationB,federalAllocation}=allocateInflow(inflow,c)
   const shortageA=Math.max(0,c.demandA-allocationA)
   const shortageB=Math.max(0,c.demandB-allocationB)
+  const surplusA=Math.max(0,allocationA-c.demandA)
+  const surplusB=Math.max(0,allocationB-c.demandB)
 
   const desiredA=optimizeShortage(
     shortageA,start.A,start.A,t.reductionCurveA,t.supplementalCurve,t.securityCurveA,t.step
@@ -311,29 +313,48 @@ export function runRiskYear(
   const afterWithdrawFed=start.Fed
   const storageAfterWithdraw=afterWithdrawA+afterWithdrawB+afterWithdrawFed
 
+  // Natural excess allocations are banked first. If a player's share cannot be
+  // stored because its account is full, that unused share is not transferred
+  // to the other player; it becomes unbanked/system water.
+  const reqSurplusA=Math.min(surplusA,Math.max(0,c.bankLimitA-afterWithdrawA))
+  const reqSurplusB=Math.min(surplusB,Math.max(0,c.bankLimitB-afterWithdrawB))
+  const reqDepFed=Math.min(federalAllocation,Math.max(0,c.bankLimitFed-afterWithdrawFed))
+  const physicalSpaceForNatural=Math.max(0,c.reservoirCapacity-storageAfterWithdraw)
+  const naturalAccepted=prorateDeposits(
+    {A:reqSurplusA,B:reqSurplusB,Fed:reqDepFed},
+    physicalSpaceForNatural
+  )
+
+  const bankAfterNaturalA=afterWithdrawA+naturalAccepted.A
+  const bankAfterNaturalB=afterWithdrawB+naturalAccepted.B
+  const bankAfterNaturalFed=afterWithdrawFed+naturalAccepted.Fed
+  const storageAfterNatural=bankAfterNaturalA+bankAfterNaturalB+bankAfterNaturalFed
+
   if(allocationA>=c.demandA-1e-9){
     planA=addSecurityInvestment(
-      planA,afterWithdrawA,c.bankLimitA,c.reservoirCapacity,
+      planA,bankAfterNaturalA,c.bankLimitA,c.reservoirCapacity-storageAfterNatural,
       t.reductionCurveA,t.supplementalCurve,t.securityCurveA,t.step
     )
   }
   if(allocationB>=c.demandB-1e-9){
     planB=addSecurityInvestment(
-      planB,afterWithdrawB,c.bankLimitB,c.reservoirCapacity,
+      planB,bankAfterNaturalB,c.bankLimitB,c.reservoirCapacity-storageAfterNatural,
       t.reductionCurveB,t.supplementalCurve,t.securityCurveB,t.step
     )
   }
 
-  const reqDepA=Math.min(planA.securityDeposit,Math.max(0,c.bankLimitA-afterWithdrawA))
-  const reqDepB=Math.min(planB.securityDeposit,Math.max(0,c.bankLimitB-afterWithdrawB))
-  const reqDepFed=Math.min(federalAllocation,Math.max(0,c.bankLimitFed-afterWithdrawFed))
-  const physicalSpace=Math.max(0,c.reservoirCapacity-storageAfterWithdraw)
-  const accepted=prorateDeposits({A:reqDepA,B:reqDepB,Fed:reqDepFed},physicalSpace)
+  const reqSecurityA=Math.min(planA.securityDeposit,Math.max(0,c.bankLimitA-bankAfterNaturalA))
+  const reqSecurityB=Math.min(planB.securityDeposit,Math.max(0,c.bankLimitB-bankAfterNaturalB))
+  const physicalSpaceForSecurity=Math.max(0,c.reservoirCapacity-storageAfterNatural)
+  const securityAccepted=prorateDeposits(
+    {A:reqSecurityA,B:reqSecurityB,Fed:0},
+    physicalSpaceForSecurity
+  )
 
-  const scaleA=reqDepA>1e-9?accepted.A/reqDepA:0
-  const scaleB=reqDepB>1e-9?accepted.B/reqDepB:0
-  const actualSecurityDepositA=accepted.A
-  const actualSecurityDepositB=accepted.B
+  const scaleA=reqSecurityA>1e-9?securityAccepted.A/reqSecurityA:0
+  const scaleB=reqSecurityB>1e-9?securityAccepted.B/reqSecurityB:0
+  const actualSecurityDepositA=securityAccepted.A
+  const actualSecurityDepositB=securityAccepted.B
   const actualDepViaReductionA=planA.depositViaReduction*scaleA
   const actualDepViaReductionB=planB.depositViaReduction*scaleB
   const actualDepViaSupplementalA=planA.depositViaSupplemental*scaleA
@@ -354,15 +375,19 @@ export function runRiskYear(
   const cashCostB=integratedCurveCost(adjustedReductionB,t.reductionCurveB,t.step)
     +integratedCurveCost(adjustedSupplementalB,t.supplementalCurve,t.step)
 
-  const endBankA=afterWithdrawA+actualSecurityDepositA
-  const endBankB=afterWithdrawB+actualSecurityDepositB
-  const endBankFed=afterWithdrawFed+accepted.Fed
+  const endBankA=bankAfterNaturalA+actualSecurityDepositA
+  const endBankB=bankAfterNaturalB+actualSecurityDepositB
+  const endBankFed=bankAfterNaturalFed
   const totalStorage=endBankA+endBankB+endBankFed
 
-  // Rejected A/B security deposits revert to current-year use. They are not spill.
+  // Rejected security deposits revert to current-year use. Natural excess shares
+  // that cannot be banked remain unbanked/system water.
   const directUseA=Math.max(0,Math.min(allocationA,c.demandA)-actualSecurityDepositA)
   const directUseB=Math.max(0,Math.min(allocationB,c.demandB)-actualSecurityDepositB)
-  const spillUnbanked=federalAllocation-accepted.Fed
+  const spillUnbanked=
+    (surplusA-naturalAccepted.A)+
+    (surplusB-naturalAccepted.B)+
+    (federalAllocation-naturalAccepted.Fed)
 
   const startStorage=start.A+start.B+start.Fed
   const accountedEnd=
@@ -378,10 +403,11 @@ export function runRiskYear(
     bankWithdrawalA:planA.bankWithdrawal,bankWithdrawalB:planB.bankWithdrawal,
     supplementalA:adjustedSupplementalA,supplementalB:adjustedSupplementalB,
     reductionA:adjustedReductionA,reductionB:adjustedReductionB,
+    surplusDepositA:naturalAccepted.A,surplusDepositB:naturalAccepted.B,
     securityDepositA:actualSecurityDepositA,securityDepositB:actualSecurityDepositB,
     depositViaReductionA:actualDepViaReductionA,depositViaReductionB:actualDepViaReductionB,
     depositViaSupplementalA:actualDepViaSupplementalA,depositViaSupplementalB:actualDepViaSupplementalB,
-    depositFed:accepted.Fed,
+    depositFed:naturalAccepted.Fed,
     directUseA,directUseB,
     cashCostA,cashCostB,
     securityCostA:planA.securityCost,securityCostB:planB.securityCost,
