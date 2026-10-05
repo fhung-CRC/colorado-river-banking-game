@@ -63,6 +63,8 @@ export interface RiskYearResult {
   supplementalB:number;
   reductionA:number;
   reductionB:number;
+  surplusDepositA:number;
+  surplusDepositB:number;
   securityDepositA:number;
   securityDepositB:number;
   depositViaReductionA:number;

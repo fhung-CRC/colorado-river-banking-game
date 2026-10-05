@@ -4,7 +4,8 @@ export const defaultConfig: SimulationConfig = {
   reservoirCapacity:20, infrastructureFloor:5, inflowMin:2, inflowMax:15,
   annualRightA:5, annualRightB:5, bankLimitA:10, bankLimitB:10, bankLimitFed:5,
   reductionCostA:80, reductionCostB:40, supplementalCost:75,
-  demandA:5, demandB:5
+  demandA:5, demandB:5,
+  excessAllocationMode:'fed'
 }
 
 export function seededRandom(seed:number) {
@@ -13,10 +14,25 @@ export function seededRandom(seed:number) {
 }
 
 export function allocateInflow(inflow:number,c:SimulationConfig=defaultConfig){
-  const allocationA=Math.min(c.annualRightA,Math.max(0,inflow))
-  const remaining=Math.max(0,inflow-allocationA)
-  const allocationB=Math.min(c.annualRightB,remaining)
-  return {allocationA,allocationB,federalAllocation:Math.max(0,inflow-allocationA-allocationB)}
+  const available=Math.max(0,inflow)
+  const baseA=Math.min(c.annualRightA,available)
+  const remaining=Math.max(0,available-baseA)
+  const baseB=Math.min(c.annualRightB,remaining)
+  const excess=Math.max(0,available-baseA-baseB)
+
+  if(c.excessAllocationMode==='proRata' && excess>0){
+    const totalRights=Math.max(0,c.annualRightA)+Math.max(0,c.annualRightB)
+    const shareA=totalRights>0?Math.max(0,c.annualRightA)/totalRights:0.5
+    const excessA=excess*shareA
+    const excessB=excess-excessA
+    return {
+      allocationA:baseA+excessA,
+      allocationB:baseB+excessB,
+      federalAllocation:0
+    }
+  }
+
+  return {allocationA:baseA,allocationB:baseB,federalAllocation:excess}
 }
 
 function acceptDeposit(balance:number,requested:number,limit:number,space:number){

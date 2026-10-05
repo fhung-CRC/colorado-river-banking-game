@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { allocateInflow, autoDecision, defaultConfig, runYear, seededRandom } from './simulation/model'
-import type { Balances, SimulationConfig, UserDecision, YearResult } from './simulation/types'
+import type { Balances, ExcessAllocationMode, SimulationConfig, UserDecision, YearResult } from './simulation/types'
 import Toy3 from './Toy3'
 
 const fmt=(v:number)=>v.toFixed(2)
@@ -26,13 +26,15 @@ export default function App(){
   const [reductionCostA,setReductionCostA]=useState(defaultConfig.reductionCostA)
   const [reductionCostB,setReductionCostB]=useState(defaultConfig.reductionCostB)
   const [supplementalCost,setSupplementalCost]=useState(defaultConfig.supplementalCost)
+  const [excessAllocationMode,setExcessAllocationMode]=useState<ExcessAllocationMode>(defaultConfig.excessAllocationMode)
 
   const config:SimulationConfig=useMemo(()=>({
     ...defaultConfig,
     reductionCostA:Math.max(0,reductionCostA),
     reductionCostB:Math.max(0,reductionCostB),
-    supplementalCost:Math.max(0,supplementalCost)
-  }),[reductionCostA,reductionCostB,supplementalCost])
+    supplementalCost:Math.max(0,supplementalCost),
+    excessAllocationMode
+  }),[reductionCostA,reductionCostB,supplementalCost,excessAllocationMode])
 
   return <main className="app">
     <header>
@@ -59,17 +61,20 @@ export default function App(){
           initialFed={initialFed} setInitialFed={setInitialFed}
           reductionCostA={reductionCostA} setReductionCostA={setReductionCostA}
           reductionCostB={reductionCostB} setReductionCostB={setReductionCostB}
-          supplementalCost={supplementalCost} setSupplementalCost={setSupplementalCost}/>
+          supplementalCost={supplementalCost} setSupplementalCost={setSupplementalCost}
+          excessAllocationMode={excessAllocationMode} setExcessAllocationMode={setExcessAllocationMode}/>
       : activeGame==='toy2'
         ? <Toy2 config={config} years={years} setYears={setYears} seed={seed} setSeed={setSeed}
             initialA={initialA} setInitialA={setInitialA} initialB={initialB} setInitialB={setInitialB}
             initialFed={initialFed} setInitialFed={setInitialFed}
             reductionCostA={reductionCostA} setReductionCostA={setReductionCostA}
             reductionCostB={reductionCostB} setReductionCostB={setReductionCostB}
-            supplementalCost={supplementalCost} setSupplementalCost={setSupplementalCost}/>
+            supplementalCost={supplementalCost} setSupplementalCost={setSupplementalCost}
+            excessAllocationMode={excessAllocationMode} setExcessAllocationMode={setExcessAllocationMode}/>
         : <Toy3 config={config} years={years} setYears={setYears} seed={seed} setSeed={setSeed}
             initialA={initialA} setInitialA={setInitialA} initialB={initialB} setInitialB={setInitialB}
-            initialFed={initialFed} setInitialFed={setInitialFed}/>}
+            initialFed={initialFed} setInitialFed={setInitialFed}
+            excessAllocationMode={excessAllocationMode} setExcessAllocationMode={setExcessAllocationMode}/>}
   </main>
 }
 
@@ -83,6 +88,7 @@ type SharedProps={
   reductionCostA:number;setReductionCostA:(v:number)=>void;
   reductionCostB:number;setReductionCostB:(v:number)=>void;
   supplementalCost:number;setSupplementalCost:(v:number)=>void;
+  excessAllocationMode:ExcessAllocationMode;setExcessAllocationMode:(v:ExcessAllocationMode)=>void;
 }
 
 function SetupFields(p:SharedProps){
@@ -95,6 +101,12 @@ function SetupFields(p:SharedProps){
     <label>A reduction cost ($/AF)<input type="number" min="0" step="1" value={p.reductionCostA} onChange={e=>p.setReductionCostA(Math.max(0,+e.target.value))}/></label>
     <label>B reduction cost ($/AF)<input type="number" min="0" step="1" value={p.reductionCostB} onChange={e=>p.setReductionCostB(Math.max(0,+e.target.value))}/></label>
     <label>Supplemental-water cost ($/AF)<input type="number" min="0" step="1" value={p.supplementalCost} onChange={e=>p.setSupplementalCost(Math.max(0,+e.target.value))}/></label>
+    <label>Excess inflow allocation
+      <select value={p.excessAllocationMode} onChange={e=>p.setExcessAllocationMode(e.target.value as ExcessAllocationMode)}>
+        <option value="fed">Fed / System Pool</option>
+        <option value="proRata">Pro Rata to A & B</option>
+      </select>
+    </label>
   </div>
 }
 
@@ -188,7 +200,7 @@ function Toy1(p:SharedProps){
     </section>
 
     {results.length>0&&<ResultsTable results={results} showFedRelease={false}/>}
-    <section className="rules"><strong>Toy 1 core rules:</strong> A receives the first 5 MAF of new inflow, B the next 5 MAF, and inflow above 10 MAF goes to the Fed account. Bank withdrawals cannot reduce storage below 5 MAF.</section>
+    <section className="rules"><strong>Toy 1 core rules:</strong> A receives the first 5 MAF of new inflow and B the next 5 MAF. Inflow above 10 MAF follows the selected excess-allocation policy: Fed/System Pool or pro rata to A and B. Bank withdrawals cannot reduce storage below 5 MAF.</section>
   </>
 }
 
