@@ -1,8 +1,11 @@
+export type ExcessAllocationMode='fed'|'proRata'
+
 export interface SimulationConfig {
   reservoirCapacity:number; infrastructureFloor:number; inflowMin:number; inflowMax:number;
   annualRightA:number; annualRightB:number; bankLimitA:number; bankLimitB:number; bankLimitFed:number;
   reductionCostA:number; reductionCostB:number; supplementalCost:number;
   demandA:number; demandB:number;
+  excessAllocationMode:ExcessAllocationMode;
 }
 
 export interface Balances { A:number; B:number; Fed:number }
