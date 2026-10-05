@@ -147,7 +147,7 @@ A major development goal for V0.1 is to ensure that the annual water balance is 
 
 Previously banked water remains owned by the account holder. Bank withdrawals may not reduce reservoir storage below the fixed 5 MAF infrastructure-protection floor. If total player withdrawal requests exceed the water physically withdrawable above that floor, available water is shared pro rata across the requests. Seniority applies to current-year inflow allocation, not to access to previously banked water.
 
-Annual inflow above the combined 10 MAF player rights is assigned to the Fed account, subject to its 5 MAF account limit and the reservoir's 20 MAF physical capacity. Fed storage is intended for future market sales, environmental or water-quality releases, or system resilience.
+Annual inflow above the combined 10 MAF player rights follows a user-selectable excess-allocation policy. Under **Fed / System Pool**, excess inflow is assigned to the Fed account, subject to its 5 MAF account limit and the reservoir's 20 MAF physical capacity. Under **Pro Rata to A & B**, the excess is divided according to A and B's annual-right shares (50/50 under the default 5/5 MAF rights) and is banked in their accounts when space is available. If a player's pro-rata share cannot be stored because its account is full, that unused share is not transferred to the other player; it becomes unbanked/system water.
 
 ---
 
@@ -294,7 +294,7 @@ Toy 1 remains the uninterrupted automatic simulation. Toy 2 is the interactive r
 
 ## Toy 3: Risk + Water Security
 
-Toy 3 introduces explicit drought-risk preferences without requiring players to manually enter a storage-value curve. Each player provides only:
+Toy 3 introduces explicit drought-risk preferences without requiring players to manually enter a storage-value curve. It also allows the treatment of wet-year excess inflow to be switched between a Fed/System Pool and pro-rata allocation to A and B. Each player provides only:
 
 - a **critical annual shortage level** in MAF; and
 - an **acceptable probability of exceeding that shortage**.
@@ -311,7 +311,7 @@ The security term is an economic opportunity/shadow value, not a cash payment. T
 
 The valuation routine evaluates candidate storage levels using equally weighted stationary inflow outcomes across the 2–15 MAF range. At each storage level it calculates the least-cost shortage response. If too many hydrologic outcomes exceed the player's critical shortage, the model shifts the least expensive scenarios needed to satisfy the selected failure tolerance toward supplemental supply. The reduction in expected constrained cost from an additional increment of storage becomes the marginal security-storage value.
 
-Rejected A/B security deposits are returned to current-year use when reservoir or account limits prevent the deposit. They are not counted as spill. Excess Federal allocation that cannot be stored remains unbanked/system release.
+Rejected A/B security deposits are returned to current-year use when reservoir or account limits prevent the deposit. They are not counted as spill. Under pro-rata excess allocation, each player's excess share is its own entitlement for that year; if that share cannot be stored, it is not reassigned to the other player and instead remains unbanked/system water. Under the Fed/System Pool option, unstorable Federal excess likewise remains unbanked/system water.
 
 ### Toy 3.1 — Stochastic Storage Valuation
 
