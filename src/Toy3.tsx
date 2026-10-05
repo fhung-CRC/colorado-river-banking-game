@@ -5,7 +5,7 @@ import {
   defaultReductionCurveA, defaultReductionCurveB, defaultSupplementalCurve,
   runRiskYear
 } from './simulation/riskModel'
-import type { Balances, SimulationConfig } from './simulation/types'
+import type { Balances, ExcessAllocationMode, SimulationConfig } from './simulation/types'
 import type { RiskYearResult, SecurityPreference, SecurityValueCurve } from './simulation/riskTypes'
 
 const fmt=(v:number)=>v.toFixed(2)
@@ -22,6 +22,8 @@ export interface Toy3Props {
   setInitialB:(v:number)=>void
   initialFed:number
   setInitialFed:(v:number)=>void
+  excessAllocationMode:ExcessAllocationMode
+  setExcessAllocationMode:(v:ExcessAllocationMode)=>void
 }
 
 export default function Toy3(p:Toy3Props){
@@ -99,7 +101,7 @@ export default function Toy3(p:Toy3Props){
       <div className="section-heading">
         <div>
           <h2>Risk + water-security setup</h2>
-          <p>Players state the shortage they want to protect against and the chance of failure they are willing to accept. Toy 3 converts those preferences into fixed security-storage value curves.</p>
+          <p>Players state the shortage they want to protect against and the chance of failure they are willing to accept. Toy 3 converts those preferences into fixed security-storage value curves, while excess inflow can be assigned either to the Fed/System Pool or pro rata to A and B.</p>
         </div>
         <button onClick={simulate}>Run Toy 3</button>
       </div>
@@ -113,6 +115,12 @@ export default function Toy3(p:Toy3Props){
         <label>A acceptable failure chance (%)<input type="number" step="1" min="0" max="50" value={failureA} onChange={e=>setFailureA(+e.target.value)}/></label>
         <label>B critical shortage (MAF)<input type="number" step="0.1" min="0" max="5" value={criticalB} onChange={e=>setCriticalB(+e.target.value)}/></label>
         <label>B acceptable failure chance (%)<input type="number" step="1" min="0" max="50" value={failureB} onChange={e=>setFailureB(+e.target.value)}/></label>
+        <label>Excess inflow allocation
+          <select value={p.excessAllocationMode} onChange={e=>p.setExcessAllocationMode(e.target.value as ExcessAllocationMode)}>
+            <option value="fed">Fed / System Pool</option>
+            <option value="proRata">Pro Rata to A & B</option>
+          </select>
+        </label>
       </div>
 
       <div className="preference-summary">
@@ -173,7 +181,7 @@ export default function Toy3(p:Toy3Props){
 
     {results.length>0&&<RiskResults results={results}/>}
 
-    <section className="rules"><strong>Toy 3 core rule:</strong> players specify reliability preferences once; Toy 3 translates them into a stationary marginal value of storage and uses that value in the annual cost-minimization objective. The reliability chance constraint itself is reserved for the valuation step, not imposed again during gameplay.</section>
+    <section className="rules"><strong>Toy 3 core rule:</strong> players specify reliability preferences once; Toy 3 translates them into a stationary marginal value of storage and uses that value in the annual cost-minimization objective. Excess inflow follows the selected Fed/System Pool or A/B pro-rata policy. The reliability chance constraint itself is reserved for the valuation step, not imposed again during gameplay.</section>
   </>
 }
 
@@ -234,14 +242,14 @@ function RiskResults({results}:{results:RiskYearResult[]}){
     <div className="table-wrap"><table className="toy3-table"><thead><tr>
       <th>Yr</th><th>Inflow</th><th>A alloc.</th><th>B alloc.</th>
       <th>A bank wd</th><th>B bank wd</th><th>A supp.</th><th>B supp.</th>
-      <th>A reduce</th><th>B reduce</th><th>A security deposit</th><th>B security deposit</th>
+      <th>A reduce</th><th>B reduce</th><th>A surplus deposit</th><th>B surplus deposit</th><th>A security deposit</th><th>B security deposit</th>
       <th>A end bank</th><th>B end bank</th><th>A cash $M</th><th>B cash $M</th>
       <th>A security $M</th><th>B security $M</th><th>Storage</th><th>Balance err</th>
     </tr></thead><tbody>
       {results.map(r=><tr key={r.year}>
         <td>{r.year}</td><td>{fmt(r.inflow)}</td><td>{fmt(r.allocationA)}</td><td>{fmt(r.allocationB)}</td>
         <td>{fmt(r.bankWithdrawalA)}</td><td>{fmt(r.bankWithdrawalB)}</td><td>{fmt(r.supplementalA)}</td><td>{fmt(r.supplementalB)}</td>
-        <td>{fmt(r.reductionA)}</td><td>{fmt(r.reductionB)}</td><td>{fmt(r.securityDepositA)}</td><td>{fmt(r.securityDepositB)}</td>
+        <td>{fmt(r.reductionA)}</td><td>{fmt(r.reductionB)}</td><td>{fmt(r.surplusDepositA)}</td><td>{fmt(r.surplusDepositB)}</td><td>{fmt(r.securityDepositA)}</td><td>{fmt(r.securityDepositB)}</td>
         <td>{fmt(r.endBankA)}</td><td>{fmt(r.endBankB)}</td><td>{fmt(r.cashCostA)}</td><td>{fmt(r.cashCostB)}</td>
         <td>{fmt(r.securityCostA)}</td><td>{fmt(r.securityCostB)}</td><td>{fmt(r.totalStorage)}</td>
         <td className={Math.abs(r.waterBalanceError)<1e-8?'ok':'bad'}>{r.waterBalanceError.toExponential(1)}</td>
