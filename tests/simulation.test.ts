@@ -10,10 +10,20 @@ const decision=(overrides={})=>({
 })
 
 describe('allocation',()=>{
-  it('uses seniority and sends excess to the federal account',()=>{
+  it('uses seniority and sends excess to the federal account by default',()=>{
     expect(allocateInflow(3)).toEqual({allocationA:3,allocationB:0,federalAllocation:0})
     expect(allocateInflow(7)).toEqual({allocationA:5,allocationB:2,federalAllocation:0})
     expect(allocateInflow(15)).toEqual({allocationA:5,allocationB:5,federalAllocation:5})
+  })
+
+  it('can distribute excess inflow pro rata to A and B',()=>{
+    const c={...defaultConfig,excessAllocationMode:'proRata' as const}
+    expect(allocateInflow(15,c)).toEqual({allocationA:7.5,allocationB:7.5,federalAllocation:0})
+  })
+
+  it('uses annual-right shares for pro-rata excess allocation',()=>{
+    const c={...defaultConfig,annualRightA:6,annualRightB:4,excessAllocationMode:'proRata' as const}
+    expect(allocateInflow(15,c)).toEqual({allocationA:9,allocationB:6,federalAllocation:0})
   })
 })
 
@@ -49,6 +59,17 @@ describe('accounting',()=>{
     expect(r.supplementalA).toBeCloseTo(1)
     expect(r.reductionA).toBeCloseTo(1)
     expect(r.costA).toBeCloseTo(150)
+  })
+
+  it('does not transfer an unstorable pro-rata excess share to the other player',()=>{
+    const c={...defaultConfig,excessAllocationMode:'proRata' as const}
+    const r=runYear(1,{A:10,B:0,Fed:0},14,decision(),c)
+    expect(r.allocationA).toBeCloseTo(7)
+    expect(r.allocationB).toBeCloseTo(7)
+    expect(r.depositA).toBeCloseTo(0)
+    expect(r.depositB).toBeCloseTo(2)
+    expect(r.spill).toBeCloseTo(2)
+    expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-9)
   })
 
   it('lets Fed release previously banked water for regulation and environmental benefits',()=>{
@@ -185,6 +206,18 @@ describe('Toy 3 risk and water security',()=>{
     const p=optimizeShortage(1,2,2,reduction,supplemental,security,0.25)
     expect(p.decisionCost).toBeCloseTo(p.cashCost+p.securityCost)
     expect(p.bankWithdrawal+p.reduction+p.supplemental).toBeCloseTo(1)
+  })
+
+  it('banks pro-rata excess with A and B instead of the Fed in Toy 3',async()=>{
+    const { runRiskYear, buildToy3Config }=await import('../src/simulation/riskModel')
+    const c={...defaultConfig,excessAllocationMode:'proRata' as const}
+    const t=buildToy3Config(undefined,undefined,undefined,undefined,undefined,c)
+    const r=runRiskYear(1,{A:0,B:0,Fed:0},14,t,c)
+    expect(r.federalAllocation).toBeCloseTo(0)
+    expect(r.surplusDepositA).toBeCloseTo(2)
+    expect(r.surplusDepositB).toBeCloseTo(2)
+    expect(r.depositFed).toBeCloseTo(0)
+    expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
 
   it('maintains physical and water-balance constraints in a risk year',async()=>{
