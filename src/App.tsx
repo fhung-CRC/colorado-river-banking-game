@@ -133,7 +133,7 @@ function ReservoirFigure({balances,config,title}:{balances:Balances;config:Simul
         <div className="segment b" style={{height:(storagePct?bPct/storagePct*100:0)+'%'}}></div>
         <div className="segment a" style={{height:(storagePct?aPct/storagePct*100:0)+'%'}}></div>
       </div>
-      <div className="floor-line" style={{bottom:floorPct+'%'}}><span>5 MAF infrastructure floor</span></div>
+      <div className="floor-line" style={{bottom:floorPct+'%'}}><span>2 MAF infrastructure floor</span></div>
     </div>
     <div className="legend">
       <span><i className="dot a"></i>A {fmt(balances.A)} / 10</span>
@@ -207,7 +207,7 @@ function Toy1(p:SharedProps){
     </section>
 
     {results.length>0&&<ResultsTable results={results} showFedRelease={false}/>}
-    <section className="rules"><strong>Toy 1 core rules:</strong> A receives the first 5 MAF of new inflow and B the next 5 MAF. Inflow above 10 MAF follows the selected excess-allocation policy: Fed/System Pool or pro rata to A and B. Bank withdrawals cannot reduce storage below 5 MAF.</section>
+    <section className="rules"><strong>Toy 1 core rules:</strong> A receives the first 5 MAF of new inflow and B the next 5 MAF. Inflow above 10 MAF follows the selected excess-allocation policy: Fed/System Pool or pro rata to A and B. Bank withdrawals cannot reduce storage below 2 MAF.</section>
   </>
 }
 
@@ -294,7 +294,7 @@ function Toy2(p:SharedProps){
           </div>
 
           <article className="fed-card">
-            <div><h3>Fed</h3><p>Fed banked water can be released for system regulation or environmental benefits. These are stored-water releases and cannot push total reservoir storage below 5 MAF.</p></div>
+            <div><h3>Fed</h3><p>Fed banked water can be released for system regulation or environmental benefits. These are stored-water releases and cannot push total reservoir storage below 2 MAF.</p></div>
             <div className="player-facts"><span>Fed bank <b>{fmt(balances.Fed)} MAF</b></span><span>New Fed allocation <b>{fmt(allocation.federalAllocation)} MAF</b></span></div>
             <div className="fed-inputs">
               <label>Regulation / system release (MAF)<input type="number" min="0" max={balances.Fed} step="0.1" value={decision.fedRegulationRelease} onChange={e=>setDecisionNumber('fedRegulationRelease',e.target.value)}/></label>
