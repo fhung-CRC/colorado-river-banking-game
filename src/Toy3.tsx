@@ -226,7 +226,7 @@ function RiskReservoir({balances,config,targetA,targetB}:{balances:Balances;conf
         <div className="segment b" style={{height:(total?balances.B/total*100:0)+'%'}}></div>
         <div className="segment a" style={{height:(total?balances.A/total*100:0)+'%'}}></div>
       </div>
-      <div className="floor-line" style={{bottom:pct(config.infrastructureFloor)+'%'}}><span>5 MAF infrastructure floor</span></div>
+      <div className="floor-line" style={{bottom:pct(config.infrastructureFloor)+'%'}}><span>2 MAF infrastructure floor</span></div>
     </div>
     <div className="legend">
       <span><i className="dot a"></i>A bank {fmt(balances.A)} MAF · reference security storage {fmt(targetA)}</span>
