@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { allocateInflow, autoDecision, defaultConfig, runYear, seededRandom } from './simulation/model'
 import type { Balances, ExcessAllocationMode, SimulationConfig, UserDecision, YearResult } from './simulation/types'
 import Toy3 from './Toy3'
+import Toy4 from './Toy4'
 
 const fmt=(v:number)=>v.toFixed(2)
 
@@ -12,13 +13,14 @@ const blankDecision:UserDecision={
   fedRegulationRelease:0,fedEnvironmentalRelease:0
 }
 
-type GameTab='toy1'|'toy2'|'toy3'
+type GameTab='toy1'|'toy2'|'toy3'|'toy4'
 interface ScenarioYear { inflow:number }
 
 export default function App(){
   const [activeGame,setActiveGame]=useState<GameTab>('toy1')
 
   const [years,setYears]=useState(20)
+  const [toy4Turns,setToy4Turns]=useState(10)
   const [seed,setSeed]=useState(42)
   const [initialA,setInitialA]=useState(5)
   const [initialB,setInitialB]=useState(5)
@@ -40,12 +42,14 @@ export default function App(){
     <header>
       <div>
         <span className="eyebrow">Colorado River Banking Game</span>
-        <h1>{activeGame==='toy1'?'Toy 1: Seniority + Banking':activeGame==='toy2'?'Toy 2: Role-Play Simulation':'Toy 3: Risk + Water Security'}</h1>
+        <h1>{activeGame==='toy1'?'Toy 1: Seniority + Banking':activeGame==='toy2'?'Toy 2: Role-Play Simulation':activeGame==='toy3'?'Toy 3: Risk + Water Security':'Toy 4: Turn-Based Water Security'}</h1>
         <p>{activeGame==='toy1'
           ?'A continuous multi-year simulation of seniority, banking, drought response, and economic costs.'
           :activeGame==='toy2'
             ?'A year-by-year role-play game where A, B, and the Fed make explicit water-management decisions.'
-            :'A continuous simulation where players balance current shortage costs against the future security value of stored water.'}</p>
+            :activeGame==='toy3'
+              ?'A continuous simulation where players balance current shortage costs against the future security value of stored water.'
+              :'A turn-based card game where hydrology, demand, hidden profit, banking, and wild cards shape each player’s water-security strategy.'}</p>
       </div>
     </header>
 
@@ -53,6 +57,7 @@ export default function App(){
       <button className={'game-tab '+(activeGame==='toy1'?'active':'')} type="button" onClick={()=>setActiveGame('toy1')} aria-current={activeGame==='toy1'?'page':undefined}>Toy 1: Seniority + Banking</button>
       <button className={'game-tab '+(activeGame==='toy2'?'active':'')} type="button" onClick={()=>setActiveGame('toy2')} aria-current={activeGame==='toy2'?'page':undefined}>Toy 2: Role-Play Simulation</button>
       <button className={'game-tab '+(activeGame==='toy3'?'active':'')} type="button" onClick={()=>setActiveGame('toy3')} aria-current={activeGame==='toy3'?'page':undefined}>Toy 3: Risk + Water Security</button>
+      <button className={'game-tab '+(activeGame==='toy4'?'active':'')} type="button" onClick={()=>setActiveGame('toy4')} aria-current={activeGame==='toy4'?'page':undefined}>Toy 4: Turn-Based Card Game</button>
     </nav>
 
     {activeGame==='toy1'
@@ -71,10 +76,12 @@ export default function App(){
             reductionCostB={reductionCostB} setReductionCostB={setReductionCostB}
             supplementalCost={supplementalCost} setSupplementalCost={setSupplementalCost}
             excessAllocationMode={excessAllocationMode} setExcessAllocationMode={setExcessAllocationMode}/>
-        : <Toy3 config={config} years={years} setYears={setYears} seed={seed} setSeed={setSeed}
-            initialA={initialA} setInitialA={setInitialA} initialB={initialB} setInitialB={setInitialB}
-            initialFed={initialFed} setInitialFed={setInitialFed}
-            excessAllocationMode={excessAllocationMode} setExcessAllocationMode={setExcessAllocationMode}/>}
+        : activeGame==='toy3'
+          ? <Toy3 config={config} years={years} setYears={setYears} seed={seed} setSeed={setSeed}
+              initialA={initialA} setInitialA={setInitialA} initialB={initialB} setInitialB={setInitialB}
+              initialFed={initialFed} setInitialFed={setInitialFed}
+              excessAllocationMode={excessAllocationMode} setExcessAllocationMode={setExcessAllocationMode}/>
+          : <Toy4 config={config} turns={toy4Turns} setTurns={setToy4Turns} seed={seed} setSeed={setSeed}/>}
   </main>
 }
 
