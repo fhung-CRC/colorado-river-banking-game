@@ -324,3 +324,82 @@ The planned Toy 3.1 formulation will minimize expected economic cost subject to 
 Potential future extensions include multi-year stochastic optimization, explicit forecast-error distributions, multiple interacting players, alternative risk metrics such as CVaR, adaptive belief updating, and finite-difference estimates of the marginal value of storage.
 
 For Toy 3 gameplay, the security-value curve remains fixed under hydrologic stationarity and annual decisions use realized inflow directly. Forecast uncertainty is deferred to a future extension.
+
+
+## Toy 4: Turn-Based Water Security Card Game
+
+Toy 4 translates the storage-security ideas from Toy 3 into a turn-based card game. Each turn automatically reveals annual hydrology and deals new annual allocation and demand cards. These flow cards are resolved in the current turn and do not carry forward.
+
+Persistent assets are different:
+
+- banked water carries forward until withdrawn;
+- unused wild cards carry forward, with a maximum hand of two wild cards per player;
+- Player A and Player B maintain cumulative scores across turns.
+
+### Turn information
+
+Each turn displays:
+
+- player score;
+- last-turn unit profit and settlement;
+- current turn and turns remaining;
+- current annual hydrology;
+- total reservoir storage and the 5 MAF infrastructure floor;
+- A, B, and Fed allocations;
+- current demand cards;
+- persistent bank cards;
+- wild cards in each player's hand;
+- projected remaining demand and projected bank after the player's current decision.
+
+Current-turn unit profit remains hidden until the start of the next turn.
+
+### Card draws
+
+A and B draw annual demand from:
+
+**4, 4.5, 5, 5.5, or 6 MAF.**
+
+The hidden unit-profit draw is:
+
+- Player A: $2 to $4 per MAF;
+- Player B: $3 to $5 per MAF.
+
+Annual inflow follows the existing 2–15 MAF hydrology range. Toy 4 uses the seniority allocation structure with Fed surplus above 10 MAF:
+
+**A receives up to the first 5 MAF, B receives up to the next 5 MAF, and inflow above 10 MAF becomes the Fed surplus allocation.**
+
+### Player decisions
+
+Players can choose how much current allocation to preserve in storage and the maximum amount of previously banked water they are willing to withdraw. This allows a player to accept some current unmet demand in order to preserve future water security.
+
+Unused current allocation is deposited into that player's bank when account and reservoir capacity permit. Stored-water withdrawals remain subject to the shared 5 MAF infrastructure floor and are pro-rated if simultaneous A/B requests exceed physically withdrawable storage.
+
+### Wild cards
+
+Toy 4 initially includes two opportunity-card types:
+
+- **Supplemental Supply**: provides 0.5, 1.0, or 1.5 MAF of external supply at a stated cost. Supplemental water can satisfy current demand only and cannot be banked.
+- **Demand Flexibility**: reduces current demand by 0.5, 1.0, or 1.5 MAF at a stated cost.
+
+A player can hold unused wild cards for future turns. The first version limits each player to two wild cards in hand.
+
+### Shortage and scoring
+
+Unserved demand earns no revenue. An additional escalating shortage penalty applies:
+
+- first 0.5 MAF unserved: no added penalty;
+- next 1.0 MAF: $1 per MAF;
+- shortage deeper than 1.5 MAF: $3 per MAF.
+
+At the start of the next turn, the prior turn's hidden unit profit is revealed and net earnings are added to the player's cumulative score:
+
+**Net earnings = served demand × unit profit - shortage penalty - played wild-card cost.**
+
+At the end of the final turn, remaining banked water receives an explicit terminal security value to avoid an artificial incentive to empty storage in the last round:
+
+- Player A: $3 per MAF remaining in the bank;
+- Player B: $4 per MAF remaining in the bank.
+
+The final score is cumulative net earnings plus terminal bank security value.
+
+Toy 4 is intended to make the central storage-risk tradeoff intuitive: players decide how much water to use for uncertain current economic gain versus how much to preserve for uncertain future hydrology, demand, and end-game security.
