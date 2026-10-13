@@ -336,6 +336,16 @@ Persistent assets are different:
 - unused wild cards carry forward, with a maximum hand of two wild cards per player;
 - Player A and Player B maintain cumulative scores across turns.
 
+### Starting storage
+
+Toy 4 starts with:
+
+- Player A bank: **1 MAF**
+- Player B bank: **2 MAF**
+- Fed/System bank: **2 MAF**
+
+Total starting reservoir storage is therefore **5 MAF**, equal to the infrastructure-protection floor.
+
 ### Turn information
 
 Each turn displays:
