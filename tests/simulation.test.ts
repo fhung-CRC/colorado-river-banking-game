@@ -320,6 +320,37 @@ describe('Toy 4 turn-based card game',()=>{
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
 
+
+  it('banks unused allocation automatically when supplemental supply serves demand',async()=>{
+    const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
+    const card={id:'s-bank',type:'supplemental' as const,quantity:1,cost:2.5}
+    const draw={
+      turn:1,inflow:10,allocationA:5,allocationB:5,federalAllocation:0,
+      demandA:4,demandB:5,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
+      wildCardA:card,wildCardB:null
+    }
+    const a={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:['s-bank']}
+    const b={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
+    const r=resolveToy4Turn({A:1,B:2,Fed:2},draw,a,b,[card],[])
+    expect(r.playerA.supplementalUsed).toBeCloseTo(1)
+    expect(r.playerA.currentAllocationUsed).toBeCloseTo(3)
+    expect(r.playerA.acceptedDeposit).toBeCloseTo(2)
+    expect(r.endBalances.A).toBeCloseTo(3)
+    expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
+  })
+
+  it('gives Player B a higher wild-card draw frequency than Player A',async()=>{
+    const { createToy4Scenario }=await import('../src/simulation/toy4Model')
+    let drawsA=0
+    let drawsB=0
+    for(let seed=1;seed<=100;seed++){
+      const turns=createToy4Scenario(50,seed)
+      drawsA+=turns.filter(t=>t.wildCardA!==null).length
+      drawsB+=turns.filter(t=>t.wildCardB!==null).length
+    }
+    expect(drawsB).toBeGreaterThan(drawsA)
+  })
+
   it('reveals settlement economics and adds terminal bank security value',async()=>{
     const { settleToy4Player, terminalSecurityValue }=await import('../src/simulation/toy4Model')
     const s=settleToy4Player({
