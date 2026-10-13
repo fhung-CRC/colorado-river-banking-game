@@ -92,9 +92,9 @@ function pick<T>(items:T[],r:number){
 }
 
 function drawWildCard(rand:()=>number,turn:number,player:Toy4Player):WildCard|null{
-  const r=rand()
-  if(r>=0.4) return null
-  const type:WildCardType=r<0.2?'supplemental':'flexibility'
+  const drawChance=player==='B'?0.6:0.4
+  if(rand()>=drawChance) return null
+  const type:WildCardType=rand()<0.5?'supplemental':'flexibility'
   const variants=type==='supplemental'?SUPPLEMENTAL_VARIANTS:FLEXIBILITY_VARIANTS
   const v=pick(variants,rand())
   return {
@@ -189,19 +189,21 @@ export function resolveToy4Turn(
 
   const saveA=clamp(decisionA.saveFromAllocation,0,draw.allocationA)
   const saveB=clamp(decisionB.saveFromAllocation,0,draw.allocationB)
-  const currentUseA=Math.min(adjustedDemandA,Math.max(0,draw.allocationA-saveA))
-  const currentUseB=Math.min(adjustedDemandB,Math.max(0,draw.allocationB-saveB))
 
-  // Supplemental cards can cover only structural demand above the full annual
-  // allocation. They cannot substitute for allocation deliberately held back
-  // for banking.
-  const structuralShortageA=Math.max(0,adjustedDemandA-draw.allocationA)
-  const structuralShortageB=Math.max(0,adjustedDemandB-draw.allocationB)
-  const supplementalUsedA=Math.min(effectsA.supplemental,structuralShortageA)
-  const supplementalUsedB=Math.min(effectsB.supplemental,structuralShortageB)
+  // A played supplemental card offsets current demand first. The supplemental
+  // water itself cannot be banked, but by serving demand it can leave more of
+  // the player's annual allocation unused; that unused allocation is then
+  // banked automatically, subject to account and reservoir limits.
+  const supplementalUsedA=Math.min(effectsA.supplemental,adjustedDemandA)
+  const supplementalUsedB=Math.min(effectsB.supplemental,adjustedDemandB)
+  const demandAfterSupplementalA=Math.max(0,adjustedDemandA-supplementalUsedA)
+  const demandAfterSupplementalB=Math.max(0,adjustedDemandB-supplementalUsedB)
 
-  const residualBeforeBankA=Math.max(0,adjustedDemandA-currentUseA-supplementalUsedA)
-  const residualBeforeBankB=Math.max(0,adjustedDemandB-currentUseB-supplementalUsedB)
+  const currentUseA=Math.min(demandAfterSupplementalA,Math.max(0,draw.allocationA-saveA))
+  const currentUseB=Math.min(demandAfterSupplementalB,Math.max(0,draw.allocationB-saveB))
+
+  const residualBeforeBankA=Math.max(0,demandAfterSupplementalA-currentUseA)
+  const residualBeforeBankB=Math.max(0,demandAfterSupplementalB-currentUseB)
   const requestA=Math.min(residualBeforeBankA,start.A,Math.max(0,decisionA.bankWithdrawalLimit))
   const requestB=Math.min(residualBeforeBankB,start.B,Math.max(0,decisionB.bankWithdrawalLimit))
 
