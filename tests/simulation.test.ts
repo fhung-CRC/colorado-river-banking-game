@@ -244,3 +244,94 @@ describe('Toy 3 risk and water security',()=>{
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
 })
+
+
+describe('Toy 4 turn-based card game',()=>{
+  it('deals reproducible hydrology, demand, hidden profit, and possible wild cards',async()=>{
+    const { createToy4Scenario }=await import('../src/simulation/toy4Model')
+    const a=createToy4Scenario(6,42)
+    const b=createToy4Scenario(6,42)
+    expect(a).toEqual(b)
+    expect(a).toHaveLength(6)
+    for(const turn of a){
+      expect([4,4.5,5,5.5,6]).toContain(turn.demandA)
+      expect([4,4.5,5,5.5,6]).toContain(turn.demandB)
+      expect(turn.hiddenUnitProfitA).toBeGreaterThanOrEqual(2)
+      expect(turn.hiddenUnitProfitA).toBeLessThanOrEqual(4)
+      expect(turn.hiddenUnitProfitB).toBeGreaterThanOrEqual(3)
+      expect(turn.hiddenUnitProfitB).toBeLessThanOrEqual(5)
+    }
+  })
+
+  it('uses seniority allocation and creates a Fed surplus card only above 10 MAF',async()=>{
+    const { createToy4Scenario }=await import('../src/simulation/toy4Model')
+    const turns=createToy4Scenario(20,7)
+    for(const turn of turns){
+      expect(turn.allocationA).toBeCloseTo(Math.min(5,turn.inflow))
+      expect(turn.allocationB).toBeCloseTo(Math.min(5,Math.max(0,turn.inflow-5)))
+      expect(turn.federalAllocation).toBeCloseTo(Math.max(0,turn.inflow-10))
+    }
+  })
+
+  it('keeps stored-water withdrawals above the shared 5 MAF infrastructure floor',async()=>{
+    const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
+    const draw={
+      turn:1,inflow:2,allocationA:2,allocationB:0,federalAllocation:0,
+      demandA:6,demandB:6,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
+      wildCardA:null,wildCardB:null
+    }
+    const d={saveFromAllocation:0,bankWithdrawalLimit:10,selectedWildCardIds:[]}
+    const r=resolveToy4Turn({A:3,B:3,Fed:1},draw,d,d,[],[])
+    expect(r.totalStorage).toBeGreaterThanOrEqual(5-1e-9)
+    expect(r.playerA.actualBankWithdrawal+r.playerB.actualBankWithdrawal).toBeCloseTo(2)
+    expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
+  })
+
+  it('lets players preserve allocation in the bank even while leaving demand unmet',async()=>{
+    const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
+    const draw={
+      turn:1,inflow:10,allocationA:5,allocationB:5,federalAllocation:0,
+      demandA:5,demandB:5,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
+      wildCardA:null,wildCardB:null
+    }
+    const save={saveFromAllocation:1,bankWithdrawalLimit:0,selectedWildCardIds:[]}
+    const use={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
+    const r=resolveToy4Turn({A:3,B:3,Fed:1},draw,save,use,[],[])
+    expect(r.playerA.unservedDemand).toBeCloseTo(1)
+    expect(r.playerA.acceptedDeposit).toBeCloseTo(1)
+    expect(r.endBalances.A).toBeCloseTo(4)
+    expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
+  })
+
+  it('supplemental wild cards serve demand but do not enter reservoir storage',async()=>{
+    const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
+    const card={id:'s1',type:'supplemental' as const,quantity:1,cost:2.5}
+    const draw={
+      turn:1,inflow:5,allocationA:5,allocationB:0,federalAllocation:0,
+      demandA:6,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
+      wildCardA:card,wildCardB:null
+    }
+    const a={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:['s1']}
+    const b={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
+    const r=resolveToy4Turn({A:3,B:3,Fed:1},draw,a,b,[card],[])
+    expect(r.playerA.supplementalUsed).toBeCloseTo(1)
+    expect(r.playerA.servedDemand).toBeCloseTo(6)
+    expect(r.endBalances.A).toBeCloseTo(3)
+    expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
+  })
+
+  it('reveals settlement economics and adds terminal bank security value',async()=>{
+    const { settleToy4Player, terminalSecurityValue }=await import('../src/simulation/toy4Model')
+    const s=settleToy4Player({
+      demand:5,adjustedDemand:5,allocation:4,currentAllocationUsed:4,
+      requestedBankWithdrawal:0,actualBankWithdrawal:0,supplementalUsed:0,
+      flexibilityReduction:0,servedDemand:4,unservedDemand:1,
+      requestedDeposit:0,acceptedDeposit:0,wildCardCost:0,
+      shortagePenalty:0.5,hiddenUnitProfit:3
+    })
+    expect(s.grossRevenue).toBeCloseTo(12)
+    expect(s.netEarnings).toBeCloseTo(11.5)
+    expect(terminalSecurityValue('A',2)).toBeCloseTo(6)
+    expect(terminalSecurityValue('B',2)).toBeCloseTo(8)
+  })
+})
