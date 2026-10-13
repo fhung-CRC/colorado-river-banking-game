@@ -141,7 +141,7 @@ export default function Toy4(p:Toy4Props){
       <section className="toy4-system-strip">
         <div><span>Turn</span><b>{active.turn} of {scenario.length}</b><small>{turnsRemaining-1} after this turn</small></div>
         <div><span>Hydrology this turn</span><b>{fmt(active.inflow)} MAF</b><small>Total annual water</small></div>
-        <div><span>Reservoir storage</span><b>{fmt(totalStorage)} / {fmt(p.config.reservoirCapacity)} MAF</b><small>5 MAF infrastructure floor</small></div>
+        <div><span>Reservoir storage</span><b>{fmt(totalStorage)} / {fmt(p.config.reservoirCapacity)} MAF</b><small>2 MAF infrastructure floor</small></div>
         <div><span>Fed surplus card</span><b>{active.federalAllocation>0?fmt(active.federalAllocation)+' MAF':'None'}</b><small>Drawn only above 10 MAF</small></div>
       </section>
 
