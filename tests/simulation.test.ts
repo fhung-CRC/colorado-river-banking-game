@@ -260,6 +260,10 @@ describe('Toy 4 turn-based card game',()=>{
       expect(turn.hiddenUnitProfitA).toBeLessThanOrEqual(4)
       expect(turn.hiddenUnitProfitB).toBeGreaterThanOrEqual(3)
       expect(turn.hiddenUnitProfitB).toBeLessThanOrEqual(5)
+      expect(turn.inflow).toBeGreaterThanOrEqual(3)
+      expect(turn.inflow).toBeLessThanOrEqual(15)
+      expect(turn.inflow*2).toBeCloseTo(Math.round(turn.inflow*2))
+      expect([0,0.5,1,1.5,2]).toContain(turn.systemRequirement)
     }
   })
 
@@ -273,17 +277,30 @@ describe('Toy 4 turn-based card game',()=>{
     }
   })
 
-  it('keeps stored-water withdrawals above the shared 2 MAF infrastructure floor',async()=>{
+  it('allows Toy 4 stored-water withdrawals without a fixed infrastructure floor',async()=>{
     const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
     const draw={
       turn:1,inflow:2,allocationA:2,allocationB:0,federalAllocation:0,
       demandA:6,demandB:6,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
-      wildCardA:null,wildCardB:null
+      wildCardA:null,wildCardB:null,systemRequirement:0
     }
     const d={saveFromAllocation:0,bankWithdrawalLimit:10,selectedWildCardIds:[]}
     const r=resolveToy4Turn({A:1,B:2,Fed:2},draw,d,d,[],[])
-    expect(r.totalStorage).toBeGreaterThanOrEqual(2-1e-9)
     expect(r.playerA.actualBankWithdrawal+r.playerB.actualBankWithdrawal).toBeCloseTo(3)
+    expect(r.endBalances.Fed).toBeCloseTo(2)
+    expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
+  })
+
+  it('scores Fed for serving the System Requirement and protecting storage',async()=>{
+    const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
+    const draw={turn:1,inflow:5,allocationA:5,allocationB:0,federalAllocation:0,demandA:5,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,wildCardA:null,wildCardB:null,systemRequirement:1}
+    const d={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
+    const r=resolveToy4Turn({A:1,B:2,Fed:2},draw,d,d,[],[],1)
+    expect(r.fedRelease).toBeCloseTo(1)
+    expect(r.fedReleaseReward).toBeCloseTo(10)
+    expect(r.fedUnmetPenalty).toBeCloseTo(0)
+    expect(r.fedProtectionBonus).toBe(30)
+    expect(r.endBalances.Fed).toBeCloseTo(1)
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
 
@@ -292,7 +309,7 @@ describe('Toy 4 turn-based card game',()=>{
     const draw={
       turn:1,inflow:10,allocationA:5,allocationB:5,federalAllocation:0,
       demandA:5,demandB:5,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
-      wildCardA:null,wildCardB:null
+      wildCardA:null,wildCardB:null,systemRequirement:0
     }
     const save={saveFromAllocation:1,bankWithdrawalLimit:0,selectedWildCardIds:[]}
     const use={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
@@ -309,7 +326,7 @@ describe('Toy 4 turn-based card game',()=>{
     const draw={
       turn:1,inflow:5,allocationA:5,allocationB:0,federalAllocation:0,
       demandA:6,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
-      wildCardA:card,wildCardB:null
+      wildCardA:card,wildCardB:null,systemRequirement:0
     }
     const a={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:['s1']}
     const b={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
@@ -327,7 +344,7 @@ describe('Toy 4 turn-based card game',()=>{
     const draw={
       turn:1,inflow:10,allocationA:5,allocationB:5,federalAllocation:0,
       demandA:4,demandB:5,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
-      wildCardA:card,wildCardB:null
+      wildCardA:card,wildCardB:null,systemRequirement:0
     }
     const a={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:['s-bank']}
     const b={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
@@ -357,7 +374,7 @@ describe('Toy 4 turn-based card game',()=>{
     const draw={
       turn:1,inflow:4,allocationA:4,allocationB:0,federalAllocation:0,
       demandA:5,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
-      wildCardA:card,wildCardB:null
+      wildCardA:card,wildCardB:null,systemRequirement:0
     }
     const a={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:['f1']}
     const b={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
