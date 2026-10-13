@@ -326,7 +326,7 @@ describe('Toy 4 turn-based card game',()=>{
     const draw={
       turn:1,inflow:5,allocationA:5,allocationB:0,federalAllocation:0,
       demandA:6,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
-      wildCardA:card,wildCardB:null
+      wildCardA:card,wildCardB:null,systemRequirement:0
     }
     const a={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:['s1']}
     const b={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
