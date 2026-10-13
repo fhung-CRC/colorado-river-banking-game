@@ -169,7 +169,7 @@ export default function Toy4(p:Toy4Props){
       </div>
     </section>}
 
-    <section className="rules"><strong>Toy 4 core rules:</strong> allocation and demand are newly dealt and resolved every turn. Any annual allocation left unused after demand is served is banked automatically, subject to account and reservoir limits. Supplemental cards can serve current demand and therefore free annual allocation for banking, but supplemental water itself cannot be banked. Banked water and unused wild cards persist, with up to six wild cards per player; B has a higher chance of drawing one each turn. This turn's unit profit stays hidden until the next turn, and unserved demand earns no revenue and may incur an escalating shortage penalty.</section>
+    <section className="rules"><strong>Toy 4 core rules:</strong> allocation and demand are newly dealt and resolved every turn. Any annual allocation left unused after demand is served is banked automatically, subject to account and reservoir limits. Supplemental cards can serve current demand and therefore free annual allocation for banking, but supplemental water itself cannot be banked. Demand Flexibility reduces the water required to produce the same goods and services without reducing profit-eligible demand. Banked water and unused wild cards persist, with up to six wild cards per player; B has a higher chance of drawing one each turn. This turn's unit profit stays hidden until the next turn, and unserved demand earns no revenue and may incur an escalating shortage penalty.</section>
   </>
 }
 
@@ -233,7 +233,7 @@ function PlayerBoard(props:{
           type="button"
         >
           <span>{card.type==='supplemental'?'Supplemental Supply':'Demand Flexibility'}</span>
-          <b>{card.type==='supplemental'?'+':'-'}{fmt(card.quantity)} MAF</b>
+          <b>{card.type==='supplemental'?'+':'-'}{fmt(card.quantity)} MAF water needed</b>
           <small>Cost {money(card.cost)} · {props.decision.selectedWildCardIds.includes(card.id)?'PLAYING':'HOLD / PLAY'}</small>
         </button>)}
         {props.hand.length===0&&<div className="toy4-no-card">No wild cards held</div>}
@@ -253,12 +253,12 @@ function PlayerBoard(props:{
         </label>
       </div>
       <div className="toy4-projection">
-        <div><span>Adjusted demand</span><b>{fmt(adjustedDemand)} MAF</b></div>
+        <div><span>Water supply needed</span><b>{fmt(adjustedDemand)} MAF</b></div>
         <div><span>Projected demand remaining</span><b>{fmt(Math.max(0,remaining-projectedBankWithdrawal))} MAF</b></div>
         <div><span>Projected bank after turn</span><b>{fmt(Math.min(10,projectedEndingBank))} MAF</b></div>
         <div><span>{props.last?'Previous unit profit':'Unit profit'}</span><b>{props.last?money(props.last.unitProfit)+'/MAF':'Hidden'}</b></div>
       </div>
-      <p className="note">Unserved demand earns no revenue. Additional shortage penalty: first 0.5 MAF free, next 1.0 MAF at $1/MAF, deeper shortage at $3/MAF.</p>
+      <p className="note">Demand Flexibility is water-use efficiency: it lowers the water needed to produce the same goods and services, so successfully served flexible demand still earns the full unit profit. Unserved demand earns no revenue. Additional shortage penalty: first 0.5 MAF free, next 1.0 MAF at $1/MAF, deeper shortage at $3/MAF.</p>
     </div>
   </article>
 }

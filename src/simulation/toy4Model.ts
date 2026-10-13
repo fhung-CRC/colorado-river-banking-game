@@ -184,6 +184,9 @@ export function resolveToy4Turn(
   const effectsA=cardEffects(selectedA)
   const effectsB=cardEffects(selectedB)
 
+  // Demand Flexibility represents water-use efficiency: the player can produce
+  // the same output with less water. It reduces water supply required, not the
+  // economic demand/output used for the profit calculation.
   const adjustedDemandA=Math.max(0,draw.demandA-effectsA.flexibility)
   const adjustedDemandB=Math.max(0,draw.demandB-effectsB.flexibility)
 
@@ -208,10 +211,18 @@ export function resolveToy4Turn(
   const requestB=Math.min(residualBeforeBankB,start.B,Math.max(0,decisionB.bankWithdrawalLimit))
 
   const allowed=proRataWithdraw(start,{A:requestA,B:requestB,Fed:0},c.infrastructureFloor)
-  const servedA=Math.min(adjustedDemandA,currentUseA+supplementalUsedA+allowed.A)
-  const servedB=Math.min(adjustedDemandB,currentUseB+supplementalUsedB+allowed.B)
-  const unservedA=Math.max(0,adjustedDemandA-servedA)
-  const unservedB=Math.max(0,adjustedDemandB-servedB)
+  const waterServedA=Math.min(adjustedDemandA,currentUseA+supplementalUsedA+allowed.A)
+  const waterServedB=Math.min(adjustedDemandB,currentUseB+supplementalUsedB+allowed.B)
+  const unservedWaterA=Math.max(0,adjustedDemandA-waterServedA)
+  const unservedWaterB=Math.max(0,adjustedDemandB-waterServedB)
+
+  // Each MAF of effective Demand Flexibility converts one MAF of avoided water
+  // requirement into fully served economic demand. Therefore a 5 MAF demand
+  // can earn profit on all 5 MAF with 4 MAF of supply plus 1 MAF of flexibility.
+  const servedA=Math.min(draw.demandA,waterServedA+effectsA.flexibility)
+  const servedB=Math.min(draw.demandB,waterServedB+effectsB.flexibility)
+  const unservedA=Math.max(0,draw.demandA-servedA)
+  const unservedB=Math.max(0,draw.demandB-servedB)
 
   const afterWithdrawA=start.A-allowed.A
   const afterWithdrawB=start.B-allowed.B

@@ -389,7 +389,7 @@ Unused current allocation is deposited into that player's bank automatically whe
 Toy 4 initially includes two opportunity-card types:
 
 - **Supplemental Supply**: provides 0.5, 1.0, or 1.5 MAF of external supply at a stated cost. Supplemental water can satisfy current demand only and cannot itself be banked, but using it can leave more annual allocation unused and therefore available for automatic banking.
-- **Demand Flexibility**: reduces current demand by 0.5, 1.0, or 1.5 MAF at a stated cost.
+- **Demand Flexibility**: represents water-use efficiency. It reduces the water supply required by 0.5, 1.0, or 1.5 MAF at a stated cost while preserving the original economic demand/output for the profit calculation. For example, 5 MAF of demand served with 4 MAF of water plus 1 MAF of Demand Flexibility earns profit on the full 5 MAF of output.
 
 A player can hold unused wild cards for future turns, up to six cards in hand. Player A has a 40% chance of drawing a wild card each turn, while Player B has a 60% chance, giving B more frequent access to supplemental-supply or demand-flexibility opportunities.
 

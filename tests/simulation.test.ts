@@ -351,6 +351,27 @@ describe('Toy 4 turn-based card game',()=>{
     expect(drawsB).toBeGreaterThan(drawsA)
   })
 
+  it('uses Demand Flexibility to reduce water needed without reducing profit-eligible output',async()=>{
+    const { resolveToy4Turn, settleToy4Player }=await import('../src/simulation/toy4Model')
+    const card={id:'f1',type:'flexibility' as const,quantity:1,cost:1}
+    const draw={
+      turn:1,inflow:4,allocationA:4,allocationB:0,federalAllocation:0,
+      demandA:5,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
+      wildCardA:card,wildCardB:null
+    }
+    const a={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:['f1']}
+    const b={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
+    const r=resolveToy4Turn({A:1,B:2,Fed:2},draw,a,b,[card],[])
+    const s=settleToy4Player(r.playerA)
+    expect(r.playerA.currentAllocationUsed).toBeCloseTo(4)
+    expect(r.playerA.flexibilityReduction).toBeCloseTo(1)
+    expect(r.playerA.servedDemand).toBeCloseTo(5)
+    expect(r.playerA.unservedDemand).toBeCloseTo(0)
+    expect(s.grossRevenue).toBeCloseTo(15)
+    expect(s.netEarnings).toBeCloseTo(14)
+    expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
+  })
+
   it('reveals settlement economics and adds terminal bank security value',async()=>{
     const { settleToy4Player, terminalSecurityValue }=await import('../src/simulation/toy4Model')
     const s=settleToy4Player({
