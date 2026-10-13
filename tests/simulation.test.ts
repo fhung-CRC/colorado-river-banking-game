@@ -35,7 +35,7 @@ describe('withdrawals',()=>{
     expect(r.Fed).toBeCloseTo(0.4)
   })
   it('blocks withdrawals at the infrastructure floor',()=>{
-    expect(proRataWithdraw({A:2,B:2,Fed:1},{A:1,B:1,Fed:1},5)).toEqual({A:0,B:0,Fed:0})
+    expect(proRataWithdraw({A:1,B:0.5,Fed:0.5},{A:1,B:0.5,Fed:0.5},2)).toEqual({A:0,B:0,Fed:0})
   })
 })
 
@@ -273,7 +273,7 @@ describe('Toy 4 turn-based card game',()=>{
     }
   })
 
-  it('keeps stored-water withdrawals above the shared 5 MAF infrastructure floor',async()=>{
+  it('keeps stored-water withdrawals above the shared 2 MAF infrastructure floor',async()=>{
     const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
     const draw={
       turn:1,inflow:2,allocationA:2,allocationB:0,federalAllocation:0,
@@ -281,9 +281,9 @@ describe('Toy 4 turn-based card game',()=>{
       wildCardA:null,wildCardB:null
     }
     const d={saveFromAllocation:0,bankWithdrawalLimit:10,selectedWildCardIds:[]}
-    const r=resolveToy4Turn({A:3,B:3,Fed:1},draw,d,d,[],[])
-    expect(r.totalStorage).toBeGreaterThanOrEqual(5-1e-9)
-    expect(r.playerA.actualBankWithdrawal+r.playerB.actualBankWithdrawal).toBeCloseTo(2)
+    const r=resolveToy4Turn({A:1,B:2,Fed:2},draw,d,d,[],[])
+    expect(r.totalStorage).toBeGreaterThanOrEqual(2-1e-9)
+    expect(r.playerA.actualBankWithdrawal+r.playerB.actualBankWithdrawal).toBeCloseTo(3)
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
 
