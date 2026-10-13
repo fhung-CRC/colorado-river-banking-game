@@ -1,7 +1,7 @@
 import type { Balances, SimulationConfig, UserDecision, YearResult } from './types'
 
 export const defaultConfig: SimulationConfig = {
-  reservoirCapacity:20, infrastructureFloor:5, inflowMin:2, inflowMax:15,
+  reservoirCapacity:20, infrastructureFloor:2, inflowMin:2, inflowMax:15,
   annualRightA:5, annualRightB:5, bankLimitA:10, bankLimitB:10, bankLimitFed:5,
   reductionCostA:80, reductionCostB:40, supplementalCost:75,
   demandA:5, demandB:5,
