@@ -344,7 +344,7 @@ Toy 4 starts with:
 - Player B bank: **2 MAF**
 - Fed/System bank: **2 MAF**
 
-Total starting reservoir storage is therefore **5 MAF**, which is 3 MAF above the 2 MAF infrastructure-protection floor.
+Total starting reservoir storage is therefore **5 MAF**. Toy 4 has no fixed infrastructure-protection floor; system protection is part of the Fed/System Operator's strategy.
 
 ### Turn information
 
@@ -354,7 +354,7 @@ Each turn displays:
 - last-turn unit profit and settlement;
 - current turn and turns remaining;
 - current annual hydrology;
-- total reservoir storage and the 2 MAF infrastructure floor;
+- total reservoir storage and the current Fed/System Requirement;
 - A, B, and Fed allocations;
 - current demand cards;
 - persistent bank cards;
@@ -374,7 +374,7 @@ The hidden unit-profit draw is:
 - Player A: $2 to $4 per MAF;
 - Player B: $3 to $5 per MAF.
 
-Annual inflow follows the existing 2–15 MAF hydrology range. Toy 4 uses the seniority allocation structure with Fed surplus above 10 MAF:
+Annual inflow is drawn uniformly from **3–15 MAF in 0.5-MAF increments**. Toy 4 uses the seniority allocation structure with Fed surplus above 10 MAF:
 
 **A receives up to the first 5 MAF, B receives up to the next 5 MAF, and inflow above 10 MAF becomes the Fed surplus allocation.**
 
@@ -382,7 +382,7 @@ Annual inflow follows the existing 2–15 MAF hydrology range. Toy 4 uses the se
 
 Players can choose how much current allocation to preserve in storage and the maximum amount of previously banked water they are willing to withdraw. This allows a player to accept some current unmet demand in order to preserve future water security.
 
-Unused current allocation is deposited into that player's bank automatically when account and reservoir capacity permit. A played supplemental-supply card satisfies current demand first; this can free a corresponding portion of the player's annual allocation to remain unused and therefore be banked. The supplemental water itself is external supply and cannot be deposited in the reservoir. Stored-water withdrawals remain subject to the shared 2 MAF infrastructure floor and are pro-rated if simultaneous A/B requests exceed physically withdrawable storage.
+Unused current allocation is deposited into that player's bank automatically when account and reservoir capacity permit. A played supplemental-supply card satisfies current demand first; this can free a corresponding portion of the player's annual allocation to remain unused and therefore be banked. The supplemental water itself is external supply and cannot be deposited in the reservoir. A, B, and Fed have independent storage accounts. Each can use only water in its own account; Toy 4 does not yet include trading, borrowing, confiscation, or pro-rata competition among accounts.
 
 ### Wild cards
 
@@ -412,4 +412,6 @@ At the end of the final turn, remaining banked water receives an explicit termin
 
 The final score is cumulative net earnings plus terminal bank security value.
 
-Toy 4 is intended to make the central storage-risk tradeoff intuitive: players decide how much water to use for uncertain current economic gain versus how much to preserve for uncertain future hydrology, demand, and end-game security.
+The Fed/System Operator also faces a revealed System Requirement each turn (0–2 MAF in 0.5-MAF increments) and chooses how much to serve from its opening Fed bank. Served requirement earns $10/MAF and unmet requirement costs $15/MAF. Fed receives an ending-storage score of -$30 at zero storage, $0 when storage is above zero but below 2 MAF, $10 from 2 to under 4 MAF, and $30 at 4 MAF or more. A Fed system release leaves the system in that turn; it is not recycled into next-turn A/B supply.
+
+Toy 4 is intended to make the central storage-risk tradeoff intuitive: A and B decide how much water to use for uncertain current economic gain versus how much to preserve for uncertain future hydrology, demand, and end-game security, while Fed balances current system obligations against reservoir resilience.
