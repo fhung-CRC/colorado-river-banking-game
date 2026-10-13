@@ -273,7 +273,7 @@ describe('Toy 4 turn-based card game',()=>{
     }
   })
 
-  it('keeps stored-water withdrawals above the shared 2 MAF infrastructure floor',async()=>{
+  it('allows Toy 4 stored-water withdrawals without a fixed infrastructure floor',async()=>{
     const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
     const draw={
       turn:1,inflow:2,allocationA:2,allocationB:0,federalAllocation:0,
@@ -282,8 +282,24 @@ describe('Toy 4 turn-based card game',()=>{
     }
     const d={saveFromAllocation:0,bankWithdrawalLimit:10,selectedWildCardIds:[]}
     const r=resolveToy4Turn({A:1,B:2,Fed:2},draw,d,d,[],[])
-    expect(r.totalStorage).toBeGreaterThanOrEqual(2-1e-9)
     expect(r.playerA.actualBankWithdrawal+r.playerB.actualBankWithdrawal).toBeCloseTo(3)
+    expect(r.endBalances.Fed).toBeCloseTo(2)
+    expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
+  })
+
+  it('lets Fed release water now for next-turn supply and earns operator rewards',async()=>{
+    const { resolveToy4Turn, addFedReleaseToTurn }=await import('../src/simulation/toy4Model')
+    const draw={turn:1,inflow:5,allocationA:5,allocationB:0,federalAllocation:0,demandA:5,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,wildCardA:null,wildCardB:null}
+    const d={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
+    const r=resolveToy4Turn({A:1,B:2,Fed:2},draw,d,d,[],[],1)
+    expect(r.fedRelease).toBeCloseTo(1)
+    expect(r.fedReleaseReward).toBeCloseTo(10)
+    expect(r.fedProtectionBonus).toBe(10)
+    expect(r.endBalances.Fed).toBeCloseTo(1)
+    const next=addFedReleaseToTurn({...draw,turn:2},r.fedRelease)
+    expect(next.inflow).toBeCloseTo(6)
+    expect(next.allocationA).toBeCloseTo(5)
+    expect(next.allocationB).toBeCloseTo(1)
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
 
