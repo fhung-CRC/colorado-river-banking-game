@@ -75,7 +75,7 @@ describe('accounting',()=>{
   it('lets Fed release previously banked water for regulation and environmental benefits',()=>{
     const r=runYear(1,{A:2,B:2,Fed:4},10,decision({fedRegulationRelease:1,fedEnvironmentalRelease:0.5}))
     expect(r.actualFedRegulationRelease).toBeCloseTo(1)
-    expect(r.actualFedEnvironmentalRelease).toBeCloseTo(1)
+    expect(r.actualFedEnvironmentalRelease).toBeCloseTo(0.5)
     expect(r.endBalances.Fed).toBeCloseTo(2.5)
     expect(r.totalStorage).toBeGreaterThanOrEqual(defaultConfig.infrastructureFloor)
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-9)
@@ -89,7 +89,7 @@ describe('accounting',()=>{
     }))
     expect(r.actualWithdrawA).toBeCloseTo(2)
     expect(r.actualFedRegulationRelease).toBeCloseTo(1)
-    expect(r.actualFedEnvironmentalRelease).toBeCloseTo(0.5)
+    expect(r.actualFedEnvironmentalRelease).toBeCloseTo(1)
     expect(r.totalStorage).toBeGreaterThanOrEqual(defaultConfig.infrastructureFloor)
   })
 })
