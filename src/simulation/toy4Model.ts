@@ -1,0 +1,319 @@
+import { allocateInflow, defaultConfig, proRataWithdraw, seededRandom } from './model'
+import type { Balances, SimulationConfig } from './types'
+
+export type Toy4Player='A'|'B'
+export type WildCardType='supplemental'|'flexibility'
+
+export interface WildCard {
+  id:string
+  type:WildCardType
+  quantity:number
+  cost:number
+}
+
+export interface Toy4TurnDraw {
+  turn:number
+  inflow:number
+  allocationA:number
+  allocationB:number
+  federalAllocation:number
+  demandA:number
+  demandB:number
+  hiddenUnitProfitA:number
+  hiddenUnitProfitB:number
+  wildCardA:WildCard|null
+  wildCardB:WildCard|null
+}
+
+export interface Toy4Decision {
+  saveFromAllocation:number
+  bankWithdrawalLimit:number
+  selectedWildCardIds:string[]
+}
+
+export interface Toy4PlayerResult {
+  demand:number
+  adjustedDemand:number
+  allocation:number
+  currentAllocationUsed:number
+  requestedBankWithdrawal:number
+  actualBankWithdrawal:number
+  supplementalUsed:number
+  flexibilityReduction:number
+  servedDemand:number
+  unservedDemand:number
+  requestedDeposit:number
+  acceptedDeposit:number
+  wildCardCost:number
+  shortagePenalty:number
+  hiddenUnitProfit:number
+}
+
+export interface Toy4TurnResult {
+  turn:number
+  inflow:number
+  playerA:Toy4PlayerResult
+  playerB:Toy4PlayerResult
+  depositFed:number
+  federalAllocation:number
+  endBalances:Balances
+  totalStorage:number
+  unbankedWater:number
+  waterBalanceError:number
+}
+
+export interface Toy4Settlement {
+  unitProfit:number
+  servedDemand:number
+  unservedDemand:number
+  grossRevenue:number
+  shortagePenalty:number
+  wildCardCost:number
+  netEarnings:number
+}
+
+const DEMANDS=[4,4.5,5,5.5,6]
+const PROFITS_A=[2,2.5,3,3.5,4]
+const PROFITS_B=[3,3.5,4,4.5,5]
+
+const SUPPLEMENTAL_VARIANTS=[
+  {quantity:0.5,cost:1.5},
+  {quantity:1.0,cost:2.5},
+  {quantity:1.5,cost:4.0}
+]
+const FLEXIBILITY_VARIANTS=[
+  {quantity:0.5,cost:0.5},
+  {quantity:1.0,cost:1.0},
+  {quantity:1.5,cost:2.0}
+]
+
+function pick<T>(items:T[],r:number){
+  return items[Math.min(items.length-1,Math.floor(r*items.length))]
+}
+
+function drawWildCard(rand:()=>number,turn:number,player:Toy4Player):WildCard|null{
+  const r=rand()
+  if(r>=0.4) return null
+  const type:WildCardType=r<0.2?'supplemental':'flexibility'
+  const variants=type==='supplemental'?SUPPLEMENTAL_VARIANTS:FLEXIBILITY_VARIANTS
+  const v=pick(variants,rand())
+  return {
+    id:`t${turn}-${player}-${type}-${v.quantity}`,
+    type,
+    quantity:v.quantity,
+    cost:v.cost
+  }
+}
+
+export function createToy4Scenario(
+  turns:number,
+  seed:number,
+  c:SimulationConfig=defaultConfig
+):Toy4TurnDraw[]{
+  const rand=seededRandom(seed)
+  const n=Math.max(1,Math.min(50,Math.floor(turns)))
+  const fedConfig={...c,excessAllocationMode:'fed' as const}
+  const out:Toy4TurnDraw[]=[]
+  for(let turn=1;turn<=n;turn++){
+    const inflow=c.inflowMin+rand()*(c.inflowMax-c.inflowMin)
+    const a=allocateInflow(inflow,fedConfig)
+    out.push({
+      turn,
+      inflow,
+      allocationA:a.allocationA,
+      allocationB:a.allocationB,
+      federalAllocation:a.federalAllocation,
+      demandA:pick(DEMANDS,rand()),
+      demandB:pick(DEMANDS,rand()),
+      hiddenUnitProfitA:pick(PROFITS_A,rand()),
+      hiddenUnitProfitB:pick(PROFITS_B,rand()),
+      wildCardA:drawWildCard(rand,turn,'A'),
+      wildCardB:drawWildCard(rand,turn,'B')
+    })
+  }
+  return out
+}
+
+export function shortagePenalty(unserved:number){
+  let q=Math.max(0,unserved)
+  const moderate=Math.min(Math.max(0,q-0.5),1)
+  const severe=Math.max(0,q-1.5)
+  return moderate*1+severe*3
+}
+
+function selectedCards(hand:WildCard[],ids:string[]){
+  const chosen=new Set(ids)
+  return hand.filter(card=>chosen.has(card.id))
+}
+
+function cardEffects(cards:WildCard[]){
+  let supplemental=0
+  let flexibility=0
+  let cost=0
+  for(const card of cards){
+    cost+=card.cost
+    if(card.type==='supplemental') supplemental+=card.quantity
+    else flexibility+=card.quantity
+  }
+  return {supplemental,flexibility,cost}
+}
+
+function clamp(v:number,min:number,max:number){
+  return Math.min(max,Math.max(min,Number.isFinite(v)?v:0))
+}
+
+function prorateDeposits(requested:{A:number;B:number;Fed:number},space:number){
+  const total=requested.A+requested.B+requested.Fed
+  if(total<=space+1e-9) return requested
+  if(total<=1e-9||space<=1e-9) return {A:0,B:0,Fed:0}
+  const f=space/total
+  return {A:requested.A*f,B:requested.B*f,Fed:requested.Fed*f}
+}
+
+export function resolveToy4Turn(
+  start:Balances,
+  draw:Toy4TurnDraw,
+  decisionA:Toy4Decision,
+  decisionB:Toy4Decision,
+  handA:WildCard[],
+  handB:WildCard[],
+  c:SimulationConfig=defaultConfig
+):Toy4TurnResult{
+  const selectedA=selectedCards(handA,decisionA.selectedWildCardIds)
+  const selectedB=selectedCards(handB,decisionB.selectedWildCardIds)
+  const effectsA=cardEffects(selectedA)
+  const effectsB=cardEffects(selectedB)
+
+  const adjustedDemandA=Math.max(0,draw.demandA-effectsA.flexibility)
+  const adjustedDemandB=Math.max(0,draw.demandB-effectsB.flexibility)
+
+  const saveA=clamp(decisionA.saveFromAllocation,0,draw.allocationA)
+  const saveB=clamp(decisionB.saveFromAllocation,0,draw.allocationB)
+  const currentUseA=Math.min(adjustedDemandA,Math.max(0,draw.allocationA-saveA))
+  const currentUseB=Math.min(adjustedDemandB,Math.max(0,draw.allocationB-saveB))
+
+  // Supplemental cards can cover only structural demand above the full annual
+  // allocation. They cannot substitute for allocation deliberately held back
+  // for banking.
+  const structuralShortageA=Math.max(0,adjustedDemandA-draw.allocationA)
+  const structuralShortageB=Math.max(0,adjustedDemandB-draw.allocationB)
+  const supplementalUsedA=Math.min(effectsA.supplemental,structuralShortageA)
+  const supplementalUsedB=Math.min(effectsB.supplemental,structuralShortageB)
+
+  const residualBeforeBankA=Math.max(0,adjustedDemandA-currentUseA-supplementalUsedA)
+  const residualBeforeBankB=Math.max(0,adjustedDemandB-currentUseB-supplementalUsedB)
+  const requestA=Math.min(residualBeforeBankA,start.A,Math.max(0,decisionA.bankWithdrawalLimit))
+  const requestB=Math.min(residualBeforeBankB,start.B,Math.max(0,decisionB.bankWithdrawalLimit))
+
+  const allowed=proRataWithdraw(start,{A:requestA,B:requestB,Fed:0},c.infrastructureFloor)
+  const servedA=Math.min(adjustedDemandA,currentUseA+supplementalUsedA+allowed.A)
+  const servedB=Math.min(adjustedDemandB,currentUseB+supplementalUsedB+allowed.B)
+  const unservedA=Math.max(0,adjustedDemandA-servedA)
+  const unservedB=Math.max(0,adjustedDemandB-servedB)
+
+  const afterWithdrawA=start.A-allowed.A
+  const afterWithdrawB=start.B-allowed.B
+  const afterWithdrawFed=start.Fed
+  const storageAfterWithdraw=afterWithdrawA+afterWithdrawB+afterWithdrawFed
+
+  const requestedDepositA=Math.min(
+    Math.max(0,draw.allocationA-currentUseA),
+    Math.max(0,c.bankLimitA-afterWithdrawA)
+  )
+  const requestedDepositB=Math.min(
+    Math.max(0,draw.allocationB-currentUseB),
+    Math.max(0,c.bankLimitB-afterWithdrawB)
+  )
+  const requestedDepositFed=Math.min(
+    Math.max(0,draw.federalAllocation),
+    Math.max(0,c.bankLimitFed-afterWithdrawFed)
+  )
+  const space=Math.max(0,c.reservoirCapacity-storageAfterWithdraw)
+  const accepted=prorateDeposits(
+    {A:requestedDepositA,B:requestedDepositB,Fed:requestedDepositFed},
+    space
+  )
+
+  const endBalances:Balances={
+    A:afterWithdrawA+accepted.A,
+    B:afterWithdrawB+accepted.B,
+    Fed:afterWithdrawFed+accepted.Fed
+  }
+  const totalStorage=endBalances.A+endBalances.B+endBalances.Fed
+  const unbankedWater=
+    Math.max(0,draw.allocationA-currentUseA-accepted.A)+
+    Math.max(0,draw.allocationB-currentUseB-accepted.B)+
+    Math.max(0,draw.federalAllocation-accepted.Fed)
+
+  const startStorage=start.A+start.B+start.Fed
+  const accountedEnd=
+    totalStorage+
+    currentUseA+currentUseB+
+    allowed.A+allowed.B+
+    unbankedWater
+  const waterBalanceError=(startStorage+draw.inflow)-accountedEnd
+
+  return {
+    turn:draw.turn,
+    inflow:draw.inflow,
+    playerA:{
+      demand:draw.demandA,
+      adjustedDemand:adjustedDemandA,
+      allocation:draw.allocationA,
+      currentAllocationUsed:currentUseA,
+      requestedBankWithdrawal:requestA,
+      actualBankWithdrawal:allowed.A,
+      supplementalUsed:supplementalUsedA,
+      flexibilityReduction:effectsA.flexibility,
+      servedDemand:servedA,
+      unservedDemand:unservedA,
+      requestedDeposit:requestedDepositA,
+      acceptedDeposit:accepted.A,
+      wildCardCost:effectsA.cost,
+      shortagePenalty:shortagePenalty(unservedA),
+      hiddenUnitProfit:draw.hiddenUnitProfitA
+    },
+    playerB:{
+      demand:draw.demandB,
+      adjustedDemand:adjustedDemandB,
+      allocation:draw.allocationB,
+      currentAllocationUsed:currentUseB,
+      requestedBankWithdrawal:requestB,
+      actualBankWithdrawal:allowed.B,
+      supplementalUsed:supplementalUsedB,
+      flexibilityReduction:effectsB.flexibility,
+      servedDemand:servedB,
+      unservedDemand:unservedB,
+      requestedDeposit:requestedDepositB,
+      acceptedDeposit:accepted.B,
+      wildCardCost:effectsB.cost,
+      shortagePenalty:shortagePenalty(unservedB),
+      hiddenUnitProfit:draw.hiddenUnitProfitB
+    },
+    depositFed:accepted.Fed,
+    federalAllocation:draw.federalAllocation,
+    endBalances,
+    totalStorage,
+    unbankedWater,
+    waterBalanceError
+  }
+}
+
+export function settleToy4Player(result:Toy4PlayerResult):Toy4Settlement{
+  const grossRevenue=result.servedDemand*result.hiddenUnitProfit
+  const netEarnings=grossRevenue-result.shortagePenalty-result.wildCardCost
+  return {
+    unitProfit:result.hiddenUnitProfit,
+    servedDemand:result.servedDemand,
+    unservedDemand:result.unservedDemand,
+    grossRevenue,
+    shortagePenalty:result.shortagePenalty,
+    wildCardCost:result.wildCardCost,
+    netEarnings
+  }
+}
+
+export function terminalSecurityValue(player:Toy4Player,bank:number){
+  const rate=player==='A'?3:4
+  return Math.max(0,bank)*rate
+}
