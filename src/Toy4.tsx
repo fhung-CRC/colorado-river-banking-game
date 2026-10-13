@@ -18,6 +18,8 @@ interface Toy4Props {
   setSeed:(v:number)=>void
 }
 
+const TOY4_START_BALANCES:Balances={A:1,B:2,Fed:2}
+
 const blankDecision=():Toy4Decision=>({
   saveFromAllocation:0,
   bankWithdrawalLimit:10,
@@ -27,7 +29,7 @@ const blankDecision=():Toy4Decision=>({
 export default function Toy4(p:Toy4Props){
   const [scenario,setScenario]=useState<Toy4TurnDraw[]>([])
   const [turnIndex,setTurnIndex]=useState(0)
-  const [balances,setBalances]=useState<Balances>({A:3,B:3,Fed:1})
+  const [balances,setBalances]=useState<Balances>(TOY4_START_BALANCES)
   const [handA,setHandA]=useState<WildCard[]>([])
   const [handB,setHandB]=useState<WildCard[]>([])
   const [decisionA,setDecisionA]=useState<Toy4Decision>(blankDecision())
@@ -56,7 +58,7 @@ export default function Toy4(p:Toy4Props){
     const b=addDrawToHand([],next[0]?.wildCardB??null)
     setScenario(next)
     setTurnIndex(0)
-    setBalances({A:3,B:3,Fed:1})
+    setBalances(TOY4_START_BALANCES)
     setHandA(a.hand)
     setHandB(b.hand)
     setDecisionA(blankDecision())
@@ -129,7 +131,7 @@ export default function Toy4(p:Toy4Props){
       <div className="setup-grid">
         <label>Turns<input type="number" min="2" max="30" value={p.turns} onChange={e=>p.setTurns(Math.max(2,Math.min(30,+e.target.value||10)))}/></label>
         <label>Random seed<input type="number" value={p.seed} onChange={e=>p.setSeed(+e.target.value)}/></label>
-        <div className="toy4-fixed-rule"><span>Starting bank</span><b>A 3 / B 3 / Fed 1 MAF</b></div>
+        <div className="toy4-fixed-rule"><span>Starting bank</span><b>A 1 / B 2 / Fed 2 MAF</b></div>
         <div className="toy4-fixed-rule"><span>End-game bank value</span><b>A $3 / B $4 per MAF</b></div>
       </div>
       <div className="status">{message}</div>
