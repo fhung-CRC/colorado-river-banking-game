@@ -333,7 +333,7 @@ Toy 4 translates the storage-security ideas from Toy 3 into a turn-based card ga
 Persistent assets are different:
 
 - banked water carries forward until withdrawn;
-- unused wild cards carry forward, with a maximum hand of two wild cards per player;
+- unused wild cards carry forward, with a maximum hand of six wild cards per player;
 - Player A and Player B maintain cumulative scores across turns.
 
 ### Starting storage
@@ -382,16 +382,16 @@ Annual inflow follows the existing 2–15 MAF hydrology range. Toy 4 uses the se
 
 Players can choose how much current allocation to preserve in storage and the maximum amount of previously banked water they are willing to withdraw. This allows a player to accept some current unmet demand in order to preserve future water security.
 
-Unused current allocation is deposited into that player's bank when account and reservoir capacity permit. Stored-water withdrawals remain subject to the shared 2 MAF infrastructure floor and are pro-rated if simultaneous A/B requests exceed physically withdrawable storage.
+Unused current allocation is deposited into that player's bank automatically when account and reservoir capacity permit. A played supplemental-supply card satisfies current demand first; this can free a corresponding portion of the player's annual allocation to remain unused and therefore be banked. The supplemental water itself is external supply and cannot be deposited in the reservoir. Stored-water withdrawals remain subject to the shared 2 MAF infrastructure floor and are pro-rated if simultaneous A/B requests exceed physically withdrawable storage.
 
 ### Wild cards
 
 Toy 4 initially includes two opportunity-card types:
 
-- **Supplemental Supply**: provides 0.5, 1.0, or 1.5 MAF of external supply at a stated cost. Supplemental water can satisfy current demand only and cannot be banked.
+- **Supplemental Supply**: provides 0.5, 1.0, or 1.5 MAF of external supply at a stated cost. Supplemental water can satisfy current demand only and cannot itself be banked, but using it can leave more annual allocation unused and therefore available for automatic banking.
 - **Demand Flexibility**: reduces current demand by 0.5, 1.0, or 1.5 MAF at a stated cost.
 
-A player can hold unused wild cards for future turns. The first version limits each player to two wild cards in hand.
+A player can hold unused wild cards for future turns, up to six cards in hand. Player A has a 40% chance of drawing a wild card each turn, while Player B has a 60% chance, giving B more frequent access to supplemental-supply or demand-flexibility opportunities.
 
 ### Shortage and scoring
 
