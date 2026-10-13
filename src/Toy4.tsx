@@ -48,7 +48,7 @@ export default function Toy4(p:Toy4Props){
 
   function addDrawToHand(hand:WildCard[],card:WildCard|null){
     if(!card) return {hand,note:''}
-    if(hand.length>=2) return {hand,note:' Wild-card hand was full, so the new card was discarded.'}
+    if(hand.length>=6) return {hand,note:' Wild-card hand was full, so the new card was discarded.'}
     return {hand:[...hand,card],note:''}
   }
 
@@ -169,7 +169,7 @@ export default function Toy4(p:Toy4Props){
       </div>
     </section>}
 
-    <section className="rules"><strong>Toy 4 core rules:</strong> allocation and demand are newly dealt and resolved every turn. Banked water and unused wild cards persist. This turn's unit profit stays hidden until the next turn; unserved demand earns no revenue and may incur an escalating shortage penalty. Supplemental cards satisfy current demand only and cannot be banked.</section>
+    <section className="rules"><strong>Toy 4 core rules:</strong> allocation and demand are newly dealt and resolved every turn. Any annual allocation left unused after demand is served is banked automatically, subject to account and reservoir limits. Supplemental cards can serve current demand and therefore free annual allocation for banking, but supplemental water itself cannot be banked. Banked water and unused wild cards persist, with up to six wild cards per player; B has a higher chance of drawing one each turn. This turn's unit profit stays hidden until the next turn, and unserved demand earns no revenue and may incur an escalating shortage penalty.</section>
   </>
 }
 
@@ -191,11 +191,11 @@ function PlayerBoard(props:{
   const flexibility=selected.filter(c=>c.type==='flexibility').reduce((s,c)=>s+c.quantity,0)
   const supplemental=selected.filter(c=>c.type==='supplemental').reduce((s,c)=>s+c.quantity,0)
   const adjustedDemand=Math.max(0,demand-flexibility)
+  const supplementalUsable=Math.min(supplemental,adjustedDemand)
+  const demandAfterSupplemental=Math.max(0,adjustedDemand-supplementalUsable)
   const allocationAvailable=Math.max(0,allocation-props.decision.saveFromAllocation)
-  const allocationUsed=Math.min(adjustedDemand,allocationAvailable)
-  const structuralShortage=Math.max(0,adjustedDemand-allocation)
-  const supplementalUsable=Math.min(supplemental,structuralShortage)
-  const remaining=Math.max(0,adjustedDemand-allocationUsed-supplementalUsable)
+  const allocationUsed=Math.min(demandAfterSupplemental,allocationAvailable)
+  const remaining=Math.max(0,demandAfterSupplemental-allocationUsed)
   const projectedBankWithdrawal=Math.min(remaining,props.bank,props.decision.bankWithdrawalLimit)
   const projectedEndingBank=Math.max(0,props.bank-projectedBankWithdrawal)+Math.max(0,allocation-allocationUsed)
 
@@ -217,13 +217,13 @@ function PlayerBoard(props:{
     </div>
 
     <div className="toy4-cards">
-      <GameCard kind="allocation" title="Allocation" value={fmt(allocation)+' MAF'} note="Play this turn or bank unused water."/>
+      <GameCard kind="allocation" title="Allocation" value={fmt(allocation)+' MAF'} note="Unused allocation is banked automatically."/>
       <GameCard kind="demand" title="Demand" value={fmt(demand)+' MAF'} note="Must be resolved this turn."/>
       <GameCard kind="profit" title="Unit Profit" value="Hidden" note={'Revealed at start of Turn '+(props.draw.turn+1)+'.'}/>
     </div>
 
     <div className="toy4-hand">
-      <div className="toy4-hand-title"><strong>Persistent hand</strong><span>{props.hand.length}/2 wild cards</span></div>
+      <div className="toy4-hand-title"><strong>Persistent hand</strong><span>{props.hand.length}/6 wild cards</span></div>
       <div className="toy4-hand-cards">
         <GameCard kind="bank" title="Banked Water" value={fmt(props.bank)+' MAF'} note="Carries forward until withdrawn."/>
         {props.hand.map(card=><button
