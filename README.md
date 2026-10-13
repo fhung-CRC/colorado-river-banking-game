@@ -69,7 +69,7 @@ The reservoir tracks three water-storage accounts: User A, User B, and the Fed.
 - User B bank limit: 10 MAF
 - Fed bank limit: 5 MAF
 - Physical reservoir capacity: 20 MAF
-- Infrastructure protection floor: 5 MAF
+- Infrastructure protection floor: 2 MAF
 
 The account limits are individual ceilings, not guaranteed physical storage. Their nominal total exceeds the physical reservoir capacity, so the 20 MAF reservoir limit always controls.
 
@@ -145,7 +145,7 @@ Use  Save/Bank     Withdraw Savings
 
 A major development goal for V0.1 is to ensure that the annual water balance is explicit and internally consistent.
 
-Previously banked water remains owned by the account holder. Bank withdrawals may not reduce reservoir storage below the fixed 5 MAF infrastructure-protection floor. If total player withdrawal requests exceed the water physically withdrawable above that floor, available water is shared pro rata across the requests. Seniority applies to current-year inflow allocation, not to access to previously banked water.
+Previously banked water remains owned by the account holder. Bank withdrawals may not reduce reservoir storage below the fixed 2 MAF infrastructure-protection floor. If total player withdrawal requests exceed the water physically withdrawable above that floor, available water is shared pro rata across the requests. Seniority applies to current-year inflow allocation, not to access to previously banked water.
 
 Annual inflow above the combined 10 MAF player rights follows a user-selectable excess-allocation policy. Under **Fed / System Pool**, excess inflow is assigned to the Fed account, subject to its 5 MAF account limit and the reservoir's 20 MAF physical capacity. Under **Pro Rata to A & B**, the excess is divided according to A and B's annual-right shares (50/50 under the default 5/5 MAF rights) and is banked in their accounts when space is available. If a player's pro-rata share cannot be stored because its account is full, that unused share is not transferred to the other player; it becomes unbanked/system water.
 
@@ -160,7 +160,7 @@ Toy 1 includes:
 - reproducible random hydrology;
 - senior/junior priority allocation;
 - three explicit storage accounts (A, B, and Fed);
-- 20 MAF reservoir capacity and a fixed 5 MAF infrastructure-protection floor;
+- 20 MAF reservoir capacity and a fixed 2 MAF infrastructure-protection floor;
 - deposits and pro-rata constrained withdrawals;
 - supplemental-water purchases;
 - demand reductions;
@@ -179,7 +179,7 @@ The simulation engine will be kept separate from the user interface so that addi
 
 ### Toy 1 — Seniority + Banking
 
-One reservoir, two users plus a Fed account, priority rights, banking, uncertain 2–15 MAF inflow, a 5 MAF infrastructure-protection floor, pro-rata constrained withdrawals, and basic economic decisions.
+One reservoir, two users plus a Fed account, priority rights, banking, uncertain 2–15 MAF inflow, a 2 MAF infrastructure-protection floor, pro-rata constrained withdrawals, and basic economic decisions.
 
 ### V0.2 — Strategy Game
 
@@ -261,7 +261,7 @@ colorado-river-banking-game/
 
 🚧 **Toy 1: Seniority + Banking — Baseline model**
 
-Toy 1 is the baseline model for the project. It combines senior/junior current-year allocation with explicit banking accounts, configurable economic costs, a Fed account, a 5 MAF infrastructure-protection floor, and an uninterrupted multi-year simulation. The website is being structured so multiple games can live in the same repository and be selected by tabs.
+Toy 1 is the baseline model for the project. It combines senior/junior current-year allocation with explicit banking accounts, configurable economic costs, a Fed account, a 2 MAF infrastructure-protection floor, and an uninterrupted multi-year simulation. The website is being structured so multiple games can live in the same repository and be selected by tabs.
 
 The guiding principle of the project is:
 
@@ -287,7 +287,7 @@ The Fed has two discretionary release choices from its previously banked account
 - **Regulation / system-management release**
 - **Environmental-benefit release**
 
-Fed releases are treated as withdrawals from previously banked Federal water. They are limited by the Fed account balance and by the same 5 MAF infrastructure-protection floor that limits A and B bank withdrawals. If A/B withdrawal requests plus Fed release requests exceed the water physically available above the floor, eligible requests are reduced pro rata. Current-year deposits do not create same-year withdrawal capacity.
+Fed releases are treated as withdrawals from previously banked Federal water. They are limited by the Fed account balance and by the same 2 MAF infrastructure-protection floor that limits A and B bank withdrawals. If A/B withdrawal requests plus Fed release requests exceed the water physically available above the floor, eligible requests are reduced pro rata. Current-year deposits do not create same-year withdrawal capacity.
 
 Toy 1 remains the uninterrupted automatic simulation. Toy 2 is the interactive role-play tab.
 
@@ -344,7 +344,7 @@ Toy 4 starts with:
 - Player B bank: **2 MAF**
 - Fed/System bank: **2 MAF**
 
-Total starting reservoir storage is therefore **5 MAF**, equal to the infrastructure-protection floor.
+Total starting reservoir storage is therefore **5 MAF**, which is 3 MAF above the 2 MAF infrastructure-protection floor.
 
 ### Turn information
 
@@ -354,7 +354,7 @@ Each turn displays:
 - last-turn unit profit and settlement;
 - current turn and turns remaining;
 - current annual hydrology;
-- total reservoir storage and the 5 MAF infrastructure floor;
+- total reservoir storage and the 2 MAF infrastructure floor;
 - A, B, and Fed allocations;
 - current demand cards;
 - persistent bank cards;
@@ -382,7 +382,7 @@ Annual inflow follows the existing 2–15 MAF hydrology range. Toy 4 uses the se
 
 Players can choose how much current allocation to preserve in storage and the maximum amount of previously banked water they are willing to withdraw. This allows a player to accept some current unmet demand in order to preserve future water security.
 
-Unused current allocation is deposited into that player's bank when account and reservoir capacity permit. Stored-water withdrawals remain subject to the shared 5 MAF infrastructure floor and are pro-rated if simultaneous A/B requests exceed physically withdrawable storage.
+Unused current allocation is deposited into that player's bank when account and reservoir capacity permit. Stored-water withdrawals remain subject to the shared 2 MAF infrastructure floor and are pro-rated if simultaneous A/B requests exceed physically withdrawable storage.
 
 ### Wild cards
 
