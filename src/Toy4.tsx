@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Balances, SimulationConfig } from './simulation/types'
 import {
-  addFedReleaseToTurn, createToy4Scenario, resolveToy4Turn, settleToy4Player, terminalSecurityValue
+  createToy4Scenario, resolveToy4Turn, settleToy4Player, terminalSecurityValue
 } from './simulation/toy4Model'
 import type {
   Toy4Decision, Toy4Player, Toy4Settlement, Toy4TurnDraw, Toy4TurnResult, WildCard
@@ -38,7 +38,6 @@ export default function Toy4(p:Toy4Props){
   const [scoreB,setScoreB]=useState(0)
   const [scoreFed,setScoreFed]=useState(0)
   const [fedRelease,setFedRelease]=useState(0)
-  const [pendingFedRelease,setPendingFedRelease]=useState(0)
   const [lastA,setLastA]=useState<Toy4Settlement|null>(null)
   const [lastB,setLastB]=useState<Toy4Settlement|null>(null)
   const [history,setHistory]=useState<Toy4TurnResult[]>([])
@@ -67,7 +66,7 @@ export default function Toy4(p:Toy4Props){
     setDecisionA(blankDecision())
     setDecisionB(blankDecision())
     setScoreA(0);setScoreB(0);setScoreFed(0)
-    setFedRelease(0);setPendingFedRelease(0)
+    setFedRelease(0)
     setLastA(null);setLastB(null)
     setHistory([])
     setFinalScore(null)
@@ -91,7 +90,7 @@ export default function Toy4(p:Toy4Props){
     const settlementB=settleToy4Player(result.playerB)
     const nextScoreA=scoreA+settlementA.netEarnings
     const nextScoreB=scoreB+settlementB.netEarnings
-    const nextScoreFed=scoreFed+result.fedReleaseReward+result.fedProtectionBonus
+    const nextScoreFed=scoreFed+result.fedReleaseReward-result.fedUnmetPenalty+result.fedProtectionBonus
     const usedA=new Set(decisionA.selectedWildCardIds)
     const usedB=new Set(decisionB.selectedWildCardIds)
     let nextHandA=handA.filter(c=>!usedA.has(c.id))
@@ -101,7 +100,6 @@ export default function Toy4(p:Toy4Props){
     setBalances(result.endBalances)
     setLastA(settlementA);setLastB(settlementB)
     setScoreA(nextScoreA);setScoreB(nextScoreB);setScoreFed(nextScoreFed)
-    setPendingFedRelease(result.fedRelease)
 
     if(turnIndex+1>=scenario.length){
       const finalA=nextScoreA+terminalSecurityValue('A',result.endBalances.A)
@@ -113,9 +111,7 @@ export default function Toy4(p:Toy4Props){
       return
     }
 
-    const baseNextTurn=scenario[turnIndex+1]
-    const nextTurn=addFedReleaseToTurn(baseNextTurn,result.fedRelease,p.config)
-    setScenario(prev=>prev.map((t,i)=>i===turnIndex+1?nextTurn:t))
+    const nextTurn=scenario[turnIndex+1]
     const a=addDrawToHand(nextHandA,nextTurn.wildCardA)
     const b=addDrawToHand(nextHandB,nextTurn.wildCardB)
     nextHandA=a.hand;nextHandB=b.hand
@@ -157,16 +153,16 @@ export default function Toy4(p:Toy4Props){
         <div><span>Hydrology this turn</span><b>{fmt(active.inflow)} MAF</b><small>Total annual water</small></div>
         <div><span>Reservoir storage</span><b>{fmt(totalStorage)} / {fmt(p.config.reservoirCapacity)} MAF</b><small>No fixed floor; Fed manages system protection</small></div>
         <div><span>Fed surplus card</span><b>{active.federalAllocation>0?fmt(active.federalAllocation)+' MAF':'None'}</b><small>Drawn only above 10 MAF</small></div>
-        <div><span>Prior Fed release added</span><b>{fmt(pendingFedRelease)} MAF</b><small>Included in this turn's supply</small></div>
+        <div><span>System requirement</span><b>{fmt(active.systemRequirement)} MAF</b><small>Fed decides how much to serve</small></div>
       </section>
 
       <section className="panel toy4-fed-control">
-        <div><span className="eyebrow">Fed / System Operator</span><h3>Release water for next turn</h3><p>Fed earns $10/MAF released. It also earns a $10 protection bonus when ending reservoir storage is strictly greater than 2 MAF.</p></div>
-        <label>Fed release (MAF)
-          <input type="number" min="0" max={balances.Fed} step="0.5" value={Math.min(balances.Fed,fedRelease)}
-            onChange={e=>setFedRelease(Math.min(balances.Fed,Math.max(0,+e.target.value||0)))}/>
+        <div><span className="eyebrow">Fed / System Operator</span><h3>Meet this turn's System Requirement</h3><p>Serve the revealed requirement from the opening Fed bank. Served water earns $10/MAF; unmet requirement costs $15/MAF. Ending storage scores -$30 at 0, $0 below 2, $10 from 2 to under 4, and $30 at 4 MAF or more.</p></div>
+        <label>System release (MAF)
+          <input type="number" min="0" max={Math.min(balances.Fed,active.systemRequirement)} step="0.5" value={Math.min(balances.Fed,active.systemRequirement,fedRelease)}
+            onChange={e=>setFedRelease(Math.min(balances.Fed,active.systemRequirement,Math.max(0,Math.round((+e.target.value||0)*2)/2)))}/>
         </label>
-        <div className="toy4-fed-preview"><span>Release reward</span><b>{money(Math.min(balances.Fed,fedRelease)*10)}</b><small>Supply appears next turn</small></div>
+        <div className="toy4-fed-preview"><span>Service / unmet</span><b>{money(Math.min(balances.Fed,active.systemRequirement,fedRelease)*10)} / -{money(Math.max(0,active.systemRequirement-Math.min(balances.Fed,active.systemRequirement,fedRelease))*15)}</b><small>Fed release leaves the system this turn</small></div>
       </section>
 
       <section className="toy4-board">
@@ -193,7 +189,7 @@ export default function Toy4(p:Toy4Props){
       </div>
     </section>}
 
-    <section className="rules"><strong>Toy 4 core rules:</strong> allocation and demand are newly dealt and resolved every turn. Any annual allocation left unused after demand is served is banked automatically, subject to account and reservoir limits. Supplemental cards can serve current demand and therefore free annual allocation for banking, but supplemental water itself cannot be banked. Demand Flexibility reduces the water required to produce the same goods and services without reducing profit-eligible demand. Banked water and unused wild cards persist, with up to six wild cards per player; B has a higher chance of drawing one each turn. Toy 4 has no fixed protection floor: Fed starts with 2 MAF, may release its banked water for $10/MAF with that water added to next turn's supply, and earns a $10 bonus whenever ending reservoir storage is strictly above 2 MAF. This turn's unit profit stays hidden until the next turn, and unserved demand earns no revenue and may incur an escalating shortage penalty.</section>
+    <section className="rules"><strong>Toy 4 core rules:</strong> allocation and demand are newly dealt and resolved every turn. Any annual allocation left unused after demand is served is banked automatically, subject to account and reservoir limits. Supplemental cards can serve current demand and therefore free annual allocation for banking, but supplemental water itself cannot be banked. Demand Flexibility reduces the water required to produce the same goods and services without reducing profit-eligible demand. Banked water and unused wild cards persist, with up to six wild cards per player; B has a higher chance of drawing one each turn. Toy 4 has no fixed protection floor. A, B, and Fed have independent accounts and can use only their own stored water. Fed starts with 2 MAF and faces a revealed System Requirement each turn: served requirement earns $10/MAF, unmet requirement costs $15/MAF, and the release leaves the system. Fed also receives an ending-storage score of -$30 at zero storage, $0 below 2 MAF, $10 from 2 to under 4 MAF, and $30 at 4 MAF or more. This turn's unit profit stays hidden until the next turn, and unserved demand earns no revenue and may incur an escalating shortage penalty.</section>
   </>
 }
 
