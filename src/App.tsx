@@ -227,7 +227,7 @@ function Toy2(p:SharedProps){
     setMessage('Year 1 is ready. A, B, and the Fed can make decisions.')
   }
 
-  function economicStrategy(){
+  function leastCostResponse(){
     if(!active) return
     const d=autoDecision(balances,active.inflow,p.config)
     setDecision({...d,fedRegulationRelease:decision.fedRegulationRelease,fedEnvironmentalRelease:decision.fedEnvironmentalRelease})
@@ -265,7 +265,7 @@ function Toy2(p:SharedProps){
       <div className="panel">
         <div className="section-heading">
           <div><h2>{active?'Year '+(yearIndex+1):history.length?'Game complete':'Annual decisions'}</h2><p>{active?'Choose A, B, and Fed actions before ending the year.':'Start Toy 2 to generate hydrology.'}</p></div>
-          {active&&<button className="secondary" onClick={economicStrategy}>Auto A/B economics</button>}
+          {active&&<button className="secondary" onClick={leastCostResponse} title="Fill A/B shortage decisions using banked water first, then the cheaper of supplemental water or demand reduction.">Use Least-Cost A/B Response</button>}
         </div>
 
         {active&&allocation&&<>
@@ -295,7 +295,7 @@ function Toy2(p:SharedProps){
             </div>
           </article>
 
-          <div className="decision-note">If A/B withdrawal requests plus Fed release requests exceed storage physically available above the 5 MAF floor, all eligible stored-water requests are reduced pro rata. New deposits in the current year do not create same-year withdrawal capacity.</div>
+          <div className="decision-note"><strong>Use Least-Cost A/B Response</strong> fills A and B decisions using prior banked water first, then the cheaper of supplemental water or demand reduction. It does not make Fed decisions or voluntarily save current-year allocation. If A/B withdrawal requests plus Fed release requests exceed storage physically available above the 5 MAF floor, all eligible stored-water requests are reduced pro rata. New deposits in the current year do not create same-year withdrawal capacity.</div>
           <button className="end-year" onClick={applyYear}>End year and apply decisions</button>
         </>}
       </div>
