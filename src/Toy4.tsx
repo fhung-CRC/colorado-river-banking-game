@@ -219,7 +219,7 @@ function PlayerBoard(props:{
     <div className="toy4-cards">
       <GameCard kind="allocation" title="Allocation" value={fmt(allocation)+' MAF'} note="Unused allocation is banked automatically."/>
       <GameCard kind="demand" title="Demand" value={fmt(demand)+' MAF'} note="Must be resolved this turn."/>
-      <GameCard kind="profit" title="Unit Profit" value="Hidden" note={'Revealed at start of Turn '+(props.draw.turn+1)+'.'}/>
+      <GameCard kind="profit" title="Unit Profit" value={props.last?money(props.last.unitProfit)+'/MAF':'Hidden'} note={props.last?'Previous turn unit profit. Current turn remains unknown.':'No previous turn yet. Current turn remains unknown.'}/>
     </div>
 
     <div className="toy4-hand">
@@ -256,7 +256,7 @@ function PlayerBoard(props:{
         <div><span>Adjusted demand</span><b>{fmt(adjustedDemand)} MAF</b></div>
         <div><span>Projected demand remaining</span><b>{fmt(Math.max(0,remaining-projectedBankWithdrawal))} MAF</b></div>
         <div><span>Projected bank after turn</span><b>{fmt(Math.min(10,projectedEndingBank))} MAF</b></div>
-        <div><span>Current profit</span><b>?</b></div>
+        <div><span>{props.last?'Previous unit profit':'Unit profit'}</span><b>{props.last?money(props.last.unitProfit)+'/MAF':'Hidden'}</b></div>
       </div>
       <p className="note">Unserved demand earns no revenue. Additional shortage penalty: first 0.5 MAF free, next 1.0 MAF at $1/MAF, deeper shortage at $3/MAF.</p>
     </div>
