@@ -56,6 +56,9 @@ export interface Toy4TurnResult {
   playerB:Toy4PlayerResult
   depositFed:number
   federalAllocation:number
+  fedRelease:number
+  fedReleaseReward:number
+  fedProtectionBonus:number
   endBalances:Balances
   totalStorage:number
   unbankedWater:number
@@ -177,8 +180,12 @@ export function resolveToy4Turn(
   decisionB:Toy4Decision,
   handA:WildCard[],
   handB:WildCard[],
+  fedReleaseRequest:number=0,
   c:SimulationConfig=defaultConfig
 ):Toy4TurnResult{
+  const fedRelease=Math.min(Math.max(0,fedReleaseRequest),start.Fed)
+  const operatingStart:Balances={...start,Fed:start.Fed-fedRelease}
+
   const selectedA=selectedCards(handA,decisionA.selectedWildCardIds)
   const selectedB=selectedCards(handB,decisionB.selectedWildCardIds)
   const effectsA=cardEffects(selectedA)
@@ -207,10 +214,11 @@ export function resolveToy4Turn(
 
   const residualBeforeBankA=Math.max(0,demandAfterSupplementalA-currentUseA)
   const residualBeforeBankB=Math.max(0,demandAfterSupplementalB-currentUseB)
-  const requestA=Math.min(residualBeforeBankA,start.A,Math.max(0,decisionA.bankWithdrawalLimit))
-  const requestB=Math.min(residualBeforeBankB,start.B,Math.max(0,decisionB.bankWithdrawalLimit))
+  const requestA=Math.min(residualBeforeBankA,operatingStart.A,Math.max(0,decisionA.bankWithdrawalLimit))
+  const requestB=Math.min(residualBeforeBankB,operatingStart.B,Math.max(0,decisionB.bankWithdrawalLimit))
 
-  const allowed=proRataWithdraw(start,{A:requestA,B:requestB,Fed:0},c.infrastructureFloor)
+  // Toy 4 has no fixed physical protection floor. Protection is a Fed operating choice.
+  const allowed=proRataWithdraw(operatingStart,{A:requestA,B:requestB,Fed:0},0)
   const waterServedA=Math.min(adjustedDemandA,currentUseA+supplementalUsedA+allowed.A)
   const waterServedB=Math.min(adjustedDemandB,currentUseB+supplementalUsedB+allowed.B)
   const unservedWaterA=Math.max(0,adjustedDemandA-waterServedA)
@@ -224,9 +232,9 @@ export function resolveToy4Turn(
   const unservedA=Math.max(0,draw.demandA-servedA)
   const unservedB=Math.max(0,draw.demandB-servedB)
 
-  const afterWithdrawA=start.A-allowed.A
-  const afterWithdrawB=start.B-allowed.B
-  const afterWithdrawFed=start.Fed
+  const afterWithdrawA=operatingStart.A-allowed.A
+  const afterWithdrawB=operatingStart.B-allowed.B
+  const afterWithdrawFed=operatingStart.Fed
   const storageAfterWithdraw=afterWithdrawA+afterWithdrawB+afterWithdrawFed
 
   const requestedDepositA=Math.min(
@@ -262,9 +270,12 @@ export function resolveToy4Turn(
   const accountedEnd=
     totalStorage+
     currentUseA+currentUseB+
-    allowed.A+allowed.B+
+    allowed.A+allowed.B+fedRelease+
     unbankedWater
   const waterBalanceError=(startStorage+draw.inflow)-accountedEnd
+
+  const fedReleaseReward=fedRelease*10
+  const fedProtectionBonus=totalStorage>2?10:0
 
   return {
     turn:draw.turn,
@@ -305,6 +316,9 @@ export function resolveToy4Turn(
     },
     depositFed:accepted.Fed,
     federalAllocation:draw.federalAllocation,
+    fedRelease,
+    fedReleaseReward,
+    fedProtectionBonus,
     endBalances,
     totalStorage,
     unbankedWater,
@@ -329,4 +343,16 @@ export function settleToy4Player(result:Toy4PlayerResult):Toy4Settlement{
 export function terminalSecurityValue(player:Toy4Player,bank:number){
   const rate=player==='A'?3:4
   return Math.max(0,bank)*rate
+}
+
+
+export function addFedReleaseToTurn(
+  draw:Toy4TurnDraw,
+  fedRelease:number,
+  c:SimulationConfig=defaultConfig
+):Toy4TurnDraw{
+  const inflow=draw.inflow+Math.max(0,fedRelease)
+  const fedConfig={...c,excessAllocationMode:'fed' as const}
+  const a=allocateInflow(inflow,fedConfig)
+  return {...draw,inflow,allocationA:a.allocationA,allocationB:a.allocationB,federalAllocation:a.federalAllocation}
 }
