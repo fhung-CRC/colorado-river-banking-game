@@ -4,7 +4,7 @@ import {
   createToy4Scenario, resolveToy4Turn, settleToy4Player, terminalSecurityValue
 } from './simulation/toy4Model'
 import type {
-  Toy4Decision, Toy4Player, Toy4Settlement, Toy4TurnDraw, Toy4TurnResult, WildCard
+  SupplyEnhancementCard, Toy4Decision, Toy4Player, Toy4Settlement, Toy4TurnDraw, Toy4TurnResult, WildCard
 } from './simulation/toy4Model'
 
 const fmt=(v:number)=>v.toFixed(2)
@@ -38,7 +38,10 @@ export default function Toy4(p:Toy4Props){
   const [scoreB,setScoreB]=useState(0)
   const [scoreFed,setScoreFed]=useState(0)
   const [serveSystemDemand,setServeSystemDemand]=useState(false)
-  const [acceptSupplyEnhancement,setAcceptSupplyEnhancement]=useState(false)
+  const [heldEnhancements,setHeldEnhancements]=useState<SupplyEnhancementCard[]>([])
+  const [enhancementAction,setEnhancementAction]=useState<{id:string;action:'invest'|'hold'}|null>(null)
+  const [pendingEnhancement,setPendingEnhancement]=useState(0)
+  const [lostEnhancements,setLostEnhancements]=useState<{card:SupplyEnhancementCard;reason:string}[]>([])
   const [lastA,setLastA]=useState<Toy4Settlement|null>(null)
   const [lastB,setLastB]=useState<Toy4Settlement|null>(null)
   const [history,setHistory]=useState<Toy4TurnResult[]>([])
@@ -48,6 +51,12 @@ export default function Toy4(p:Toy4Props){
   const active=scenario[turnIndex]
   const turnsRemaining=active?scenario.length-turnIndex:0
   const totalStorage=balances.A+balances.B+balances.Fed
+  const currentEnhancement=active?.supplyEnhancement??null
+  const effectiveInflow=active?active.inflow+pendingEnhancement:0
+  const effectiveAllocationA=Math.min(5,effectiveInflow)
+  const effectiveAllocationB=Math.min(5,Math.max(0,effectiveInflow-5))
+  const effectiveFedAllocation=Math.max(0,effectiveInflow-10)
+  const activeForPlayers=active?{...active,allocationA:effectiveAllocationA,allocationB:effectiveAllocationB,federalAllocation:effectiveFedAllocation}:active
 
   function addDrawToHand(hand:WildCard[],card:WildCard|null){
     if(!card) return {hand,note:''}
@@ -67,7 +76,7 @@ export default function Toy4(p:Toy4Props){
     setDecisionA(blankDecision())
     setDecisionB(blankDecision())
     setScoreA(0);setScoreB(0);setScoreFed(0)
-    setServeSystemDemand(false);setAcceptSupplyEnhancement(false)
+    setServeSystemDemand(false);setHeldEnhancements([]);setEnhancementAction(null);setPendingEnhancement(0);setLostEnhancements([])
     setLastA(null);setLastB(null)
     setHistory([])
     setFinalScore(null)
@@ -86,16 +95,22 @@ export default function Toy4(p:Toy4Props){
 
   function endTurn(){
     if(!active) return
-    const result=resolveToy4Turn(balances,active,decisionA,decisionB,handA,handB,serveSystemDemand,acceptSupplyEnhancement,p.config)
+    const investCard=enhancementAction?.action==='invest'
+      ?[currentEnhancement,...heldEnhancements].find(card=>card?.id===enhancementAction.id)??null
+      :null
+    const investmentCost=investCard?.cost??0
+    const result=resolveToy4Turn(balances,active,decisionA,decisionB,handA,handB,serveSystemDemand,pendingEnhancement,p.config)
     const settlementA=settleToy4Player(result.playerA)
     const settlementB=settleToy4Player(result.playerB)
     const nextScoreA=scoreA+settlementA.netEarnings
     const nextScoreB=scoreB+settlementB.netEarnings
-    const nextScoreFed=scoreFed+result.fedReleaseReward-result.fedUnmetPenalty+result.fedProtectionBonus+result.supplyEnhancementReward
+    const nextScoreFed=scoreFed+result.fedReleaseReward-result.fedUnmetPenalty+result.fedProtectionBonus-investmentCost
     const usedA=new Set(decisionA.selectedWildCardIds)
     const usedB=new Set(decisionB.selectedWildCardIds)
     let nextHandA=handA.filter(c=>!usedA.has(c.id))
     let nextHandB=handB.filter(c=>!usedB.has(c.id))
+    let nextHeld=heldEnhancements.filter(card=>card.id!==investCard?.id)
+    if(enhancementAction?.action==='hold'&&currentEnhancement&&nextHeld.length<3) nextHeld=[...nextHeld,currentEnhancement]
 
     setHistory(h=>[...h,result])
     setBalances(result.endBalances)
@@ -107,19 +122,30 @@ export default function Toy4(p:Toy4Props){
       const finalB=nextScoreB+terminalSecurityValue('B',result.endBalances.B)
       setFinalScore({A:finalA,B:finalB,Fed:nextScoreFed})
       setScenario([])
-      setHandA(nextHandA);setHandB(nextHandB)
+      setHandA(nextHandA);setHandB(nextHandB);setHeldEnhancements(nextHeld)
       setMessage('Game complete. Final-turn earnings and end-game security value have been added.')
       return
     }
 
     const nextTurn=scenario[turnIndex+1]
+    const lossReasons=['Scam Alert','Well Went Dry','Permit Denied','Funding Fell Through','Construction Failure','Partner Withdrew']
+    const survived:SupplyEnhancementCard[]=[]
+    const lost:{card:SupplyEnhancementCard;reason:string}[]=[]
+    nextHeld.forEach((card,i)=>{
+      const roll=nextTurn.enhancementLossRolls?.[i]??1
+      if(roll<0.35) lost.push({card,reason:lossReasons[Math.floor(roll*1000)%lossReasons.length]})
+      else survived.push(card)
+    })
     const a=addDrawToHand(nextHandA,nextTurn.wildCardA)
     const b=addDrawToHand(nextHandB,nextTurn.wildCardB)
     nextHandA=a.hand;nextHandB=b.hand
-    setHandA(nextHandA);setHandB(nextHandB)
+    setHandA(nextHandA);setHandB(nextHandB);setHeldEnhancements(survived)
+    if(lost.length) setLostEnhancements(old=>[...lost,...old].slice(0,3))
+    setPendingEnhancement(investCard?.quantity??0)
     setTurnIndex(i=>i+1)
-    setDecisionA(blankDecision());setDecisionB(blankDecision());setServeSystemDemand(false);setAcceptSupplyEnhancement(false)
-    setMessage('Turn '+(turnIndex+2)+' dealt. Last-turn unit profit is now revealed.'+a.note+b.note)
+    setDecisionA(blankDecision());setDecisionB(blankDecision());setServeSystemDemand(false);setEnhancementAction(null)
+    const lossNote=lost.length?' '+lost.map(x=>x.reason+': +'+fmt(x.card.quantity)+' MAF / '+money(x.card.cost??0)+' opportunity lost.').join(' '):''
+    setMessage('Turn '+(turnIndex+2)+' dealt. Last-turn unit profit is now revealed.'+lossNote+a.note+b.note)
   }
 
   const finalBalances=history.length?history[history.length-1].endBalances:balances
