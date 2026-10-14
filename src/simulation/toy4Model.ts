@@ -9,13 +9,13 @@ export interface WildCard {
   type:WildCardType
   quantity:number
   cost:number
-  reward?:number
 }
 
 export interface SupplyEnhancementCard {
-  id:string
+  id?:string
   quantity:number
-  cost:number
+  cost?:number
+  reward?:number
 }
 
 export interface Toy4TurnDraw {
