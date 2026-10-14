@@ -221,7 +221,9 @@ export function resolveToy4Turn(
 ):Toy4TurnResult{
   // Supply Enhancement is purchased in the prior turn and affects this turn's
   // hydrology before the normal A -> B -> Fed allocation is applied.
-  const supplyEnhancementQuantity=typeof pendingEnhancementQuantity==='boolean'\n    ?(pendingEnhancementQuantity?(draw.supplyEnhancement?.quantity??0):0)\n    :Math.max(0,pendingEnhancementQuantity)
+  const supplyEnhancementQuantity=typeof pendingEnhancementQuantity==='boolean'
+    ?(pendingEnhancementQuantity?(draw.supplyEnhancement?.quantity??0):0)
+    :Math.max(0,pendingEnhancementQuantity)
   const supplyEnhancementAccepted=supplyEnhancementQuantity>0
   const supplyEnhancementReward=0
   const effectiveInflow=draw.inflow+supplyEnhancementQuantity
