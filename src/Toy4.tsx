@@ -197,20 +197,20 @@ export default function Toy4(p:Toy4Props){
             <span>New Supply Enhancement</span><b>+{fmt(currentEnhancement.quantity)} MAF next turn</b><strong>Cost {money(currentEnhancement.cost??0)}</strong>
             <small>Discarded by default. Next-turn natural hydrology is unknown.</small>
             <div className="toy4-card-actions">
-              <button type="button" disabled={turnIndex+1>=scenario.length} className={enhancementAction?.id===currentEnhancement.id&&enhancementAction.action==='invest'?'selected':''} onClick={()=>setEnhancementAction(v=>v?.id===currentEnhancement.id&&v.action==='invest'?null:{id:currentEnhancement.id!,action:'invest'})}>Invest</button>
-              <button type="button" disabled={heldEnhancements.length>=3} className={enhancementAction?.id===currentEnhancement.id&&enhancementAction.action==='hold'?'selected':''} onClick={()=>setEnhancementAction(v=>v?.id===currentEnhancement.id&&v.action==='hold'?null:{id:currentEnhancement.id!,action:'hold'})}>Hold</button>
+              <button type="button" disabled={turnIndex+1>=scenario.length} className={enhancementAction?.id===currentEnhancement.id&&enhancementAction?.action==='invest'?'selected':''} onClick={()=>setEnhancementAction(v=>v?.id===currentEnhancement.id&&v?.action==='invest'?null:{id:currentEnhancement.id!,action:'invest'})}>Invest</button>
+              <button type="button" disabled={heldEnhancements.length>=3} className={enhancementAction?.id===currentEnhancement.id&&enhancementAction?.action==='hold'?'selected':''} onClick={()=>setEnhancementAction(v=>v?.id===currentEnhancement.id&&v?.action==='hold'?null:{id:currentEnhancement.id!,action:'hold'})}>Hold</button>
             </div>
           </div>}
         </div>
         <div className="toy4-enhancement-hand">
           <div className="toy4-hand-title"><strong>Held enhancement opportunities</strong><span>{heldEnhancements.length}/3 · each faces 35% loss risk next turn</span></div>
           <div className="toy4-hand-cards">
-            {heldEnhancements.map(card=><div key={card.id} className="toy4-enhancement-card held"><span>Held Opportunity</span><b>+{fmt(card.quantity)} MAF</b><strong>Cost {money(card.cost??0)}</strong><div className="toy4-card-actions"><button type="button" disabled={turnIndex+1>=scenario.length} className={enhancementAction?.id===card.id&&enhancementAction.action==='invest'?'selected':''} onClick={()=>setEnhancementAction(v=>v?.id===card.id?null:{id:card.id!,action:'invest'})}>Invest</button><button type="button" onClick={()=>setHeldEnhancements(h=>h.filter(x=>x.id!==card.id))}>Discard</button></div></div>)}
+            {heldEnhancements.map(card=><div key={card.id} className="toy4-enhancement-card held"><span>Held Opportunity</span><b>+{fmt(card.quantity)} MAF</b><strong>Cost {money(card.cost??0)}</strong><div className="toy4-card-actions"><button type="button" disabled={turnIndex+1>=scenario.length} className={enhancementAction?.id===card.id&&enhancementAction?.action==='invest'?'selected':''} onClick={()=>setEnhancementAction(v=>v?.id===card.id?null:{id:card.id!,action:'invest'})}>Invest</button><button type="button" onClick={()=>setHeldEnhancements(h=>h.filter(x=>x.id!==card.id))}>Discard</button></div></div>)}
             {heldEnhancements.length===0&&<div className="toy4-no-card">No enhancement opportunities held</div>}
           </div>
         </div>
         {lostEnhancements.length>0&&<div className="toy4-lost-strip"><strong>Lost opportunities</strong>{lostEnhancements.map((x,i)=><div key={(x.card.id??'lost')+i} className="toy4-lost-card"><span className="toy4-x">×</span><div><b>{x.reason}</b><small>+{fmt(x.card.quantity)} MAF · Cost {money(x.card.cost??0)}</small></div></div>)}</div>}
-        <div className="toy4-decision"><h3>Fed turn score preview</h3><p>System Demand: {active.systemRequirement===0?money(0):serveSystemDemand?('+'+money(active.systemRequirement*10)):('-'+money(active.systemRequirement*15))}. Storage bonus is -$30 / $0 / +$10 / +$15 based on ending storage. {enhancementAction?.action==='invest'?('Enhancement investment cost: -'+money(([currentEnhancement,...heldEnhancements].find(x=>x?.id===enhancementAction.id)?.cost??0))+'.'):'No enhancement investment cost selected.'}</p></div>
+        <div className="toy4-decision"><h3>Fed turn score preview</h3><p>System Demand: {active.systemRequirement===0?money(0):serveSystemDemand?('+'+money(active.systemRequirement*10)):('-'+money(active.systemRequirement*15))}. Storage bonus is -$30 / $0 / +$10 / +$15 based on ending storage. {enhancementAction?.action==='invest'?('Enhancement investment cost: -'+money(([currentEnhancement,...heldEnhancements].find(x=>x?.id===enhancementAction?.id)?.cost??0))+'.'):'No enhancement investment cost selected.'}</p></div>
       </section>
 
       <button className="toy4-end-turn top" onClick={endTurn}>Lock decisions and end turn</button>
