@@ -9,6 +9,7 @@ export interface WildCard {
   type:WildCardType
   quantity:number
   cost:number
+  reward?:number
 }
 
 export interface SupplyEnhancementCard {
@@ -31,7 +32,7 @@ export interface Toy4TurnDraw {
   wildCardB:WildCard|null
   systemRequirement:number
   supplyEnhancement:SupplyEnhancementCard|null
-  enhancementLossRolls:number[]
+  enhancementLossRolls?:number[]
 }
 
 export interface Toy4Decision {
@@ -215,12 +216,12 @@ export function resolveToy4Turn(
   handA:WildCard[],
   handB:WildCard[],
   serveSystemDemand:boolean=false,
-  pendingEnhancementQuantity:number=0,
+  pendingEnhancementQuantity:number|boolean=0,
   c:SimulationConfig=defaultConfig
 ):Toy4TurnResult{
   // Supply Enhancement is purchased in the prior turn and affects this turn's
   // hydrology before the normal A -> B -> Fed allocation is applied.
-  const supplyEnhancementQuantity=Math.max(0,pendingEnhancementQuantity)
+  const supplyEnhancementQuantity=typeof pendingEnhancementQuantity==='boolean'\n    ?(pendingEnhancementQuantity?(draw.supplyEnhancement?.quantity??0):0)\n    :Math.max(0,pendingEnhancementQuantity)
   const supplyEnhancementAccepted=supplyEnhancementQuantity>0
   const supplyEnhancementReward=0
   const effectiveInflow=draw.inflow+supplyEnhancementQuantity
