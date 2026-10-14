@@ -264,6 +264,10 @@ describe('Toy 4 turn-based card game',()=>{
       expect(turn.inflow).toBeLessThanOrEqual(15)
       expect(turn.inflow*2).toBeCloseTo(Math.round(turn.inflow*2))
       expect([0,0.5,1,1.5,2]).toContain(turn.systemRequirement)
+      if(turn.supplyEnhancement){
+        expect([0.5,1,1.5]).toContain(turn.supplyEnhancement.quantity)
+        expect([5,10,15]).toContain(turn.supplyEnhancement.reward)
+      }
     }
   })
 
@@ -282,7 +286,7 @@ describe('Toy 4 turn-based card game',()=>{
     const draw={
       turn:1,inflow:2,allocationA:2,allocationB:0,federalAllocation:0,
       demandA:6,demandB:6,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
-      wildCardA:null,wildCardB:null,systemRequirement:0
+      wildCardA:null,wildCardB:null,systemRequirement:0,supplyEnhancement:null
     }
     const d={saveFromAllocation:0,bankWithdrawalLimit:10,selectedWildCardIds:[]}
     const r=resolveToy4Turn({A:1,B:2,Fed:2},draw,d,d,[],[])
@@ -293,9 +297,9 @@ describe('Toy 4 turn-based card game',()=>{
 
   it('scores Fed for serving the System Requirement and protecting storage',async()=>{
     const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
-    const draw={turn:1,inflow:5,allocationA:5,allocationB:0,federalAllocation:0,demandA:5,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,wildCardA:null,wildCardB:null,systemRequirement:1}
+    const draw={turn:1,inflow:5,allocationA:5,allocationB:0,federalAllocation:0,demandA:5,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,wildCardA:null,wildCardB:null,systemRequirement:1,supplyEnhancement:null}
     const d={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
-    const r=resolveToy4Turn({A:1,B:2,Fed:2},draw,d,d,[],[],1)
+    const r=resolveToy4Turn({A:1,B:2,Fed:2},draw,d,d,[],[],true,false)
     expect(r.fedRelease).toBeCloseTo(1)
     expect(r.fedReleaseReward).toBeCloseTo(10)
     expect(r.fedUnmetPenalty).toBeCloseTo(0)
@@ -304,12 +308,24 @@ describe('Toy 4 turn-based card game',()=>{
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
 
+  it('applies an accepted Supply Enhancement to current-turn hydrology and Fed score',async()=>{
+    const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
+    const draw={turn:1,inflow:9,allocationA:5,allocationB:4,federalAllocation:0,demandA:5,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,wildCardA:null,wildCardB:null,systemRequirement:0,supplyEnhancement:{quantity:1.5,reward:10}}
+    const d={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
+    const r=resolveToy4Turn({A:1,B:2,Fed:2},draw,d,d,[],[],false,true)
+    expect(r.inflow).toBeCloseTo(10.5)
+    expect(r.federalAllocation).toBeCloseTo(0.5)
+    expect(r.supplyEnhancementReward).toBe(10)
+    expect(r.supplyEnhancementAccepted).toBe(true)
+    expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
+  })
+
   it('lets players preserve allocation in the bank even while leaving demand unmet',async()=>{
     const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
     const draw={
       turn:1,inflow:10,allocationA:5,allocationB:5,federalAllocation:0,
       demandA:5,demandB:5,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
-      wildCardA:null,wildCardB:null,systemRequirement:0
+      wildCardA:null,wildCardB:null,systemRequirement:0,supplyEnhancement:null
     }
     const save={saveFromAllocation:1,bankWithdrawalLimit:0,selectedWildCardIds:[]}
     const use={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
@@ -326,7 +342,7 @@ describe('Toy 4 turn-based card game',()=>{
     const draw={
       turn:1,inflow:5,allocationA:5,allocationB:0,federalAllocation:0,
       demandA:6,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
-      wildCardA:card,wildCardB:null,systemRequirement:0
+      wildCardA:card,wildCardB:null,systemRequirement:0,supplyEnhancement:null
     }
     const a={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:['s1']}
     const b={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
@@ -344,7 +360,7 @@ describe('Toy 4 turn-based card game',()=>{
     const draw={
       turn:1,inflow:10,allocationA:5,allocationB:5,federalAllocation:0,
       demandA:4,demandB:5,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
-      wildCardA:card,wildCardB:null,systemRequirement:0
+      wildCardA:card,wildCardB:null,systemRequirement:0,supplyEnhancement:null
     }
     const a={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:['s-bank']}
     const b={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
@@ -374,7 +390,7 @@ describe('Toy 4 turn-based card game',()=>{
     const draw={
       turn:1,inflow:4,allocationA:4,allocationB:0,federalAllocation:0,
       demandA:5,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,
-      wildCardA:card,wildCardB:null,systemRequirement:0
+      wildCardA:card,wildCardB:null,systemRequirement:0,supplyEnhancement:null
     }
     const a={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:['f1']}
     const b={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
