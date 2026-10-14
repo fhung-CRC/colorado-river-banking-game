@@ -266,7 +266,7 @@ describe('Toy 4 turn-based card game',()=>{
       expect([0,0.5,1,1.5,2]).toContain(turn.systemRequirement)
       if(turn.supplyEnhancement){
         expect([0.5,1,1.5]).toContain(turn.supplyEnhancement.quantity)
-        expect([5,10,15]).toContain(turn.supplyEnhancement.reward)
+        expect([5,10,15]).toContain(turn.supplyEnhancement.cost)
       }
     }
   })
@@ -303,19 +303,19 @@ describe('Toy 4 turn-based card game',()=>{
     expect(r.fedRelease).toBeCloseTo(1)
     expect(r.fedReleaseReward).toBeCloseTo(10)
     expect(r.fedUnmetPenalty).toBeCloseTo(0)
-    expect(r.fedProtectionBonus).toBe(30)
+    expect(r.fedProtectionBonus).toBe(15)
     expect(r.endBalances.Fed).toBeCloseTo(1)
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
 
-  it('applies an accepted Supply Enhancement to current-turn hydrology and Fed score',async()=>{
+  it('applies a prior-turn Supply Enhancement to hydrology before allocation',async()=>{
     const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
     const draw={turn:1,inflow:9,allocationA:5,allocationB:4,federalAllocation:0,demandA:5,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,wildCardA:null,wildCardB:null,systemRequirement:0,supplyEnhancement:{quantity:1.5,reward:10}}
     const d={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
     const r=resolveToy4Turn({A:1,B:2,Fed:2},draw,d,d,[],[],false,true)
     expect(r.inflow).toBeCloseTo(10.5)
     expect(r.federalAllocation).toBeCloseTo(0.5)
-    expect(r.supplyEnhancementReward).toBe(10)
+    expect(r.supplyEnhancementReward).toBe(0)
     expect(r.supplyEnhancementAccepted).toBe(true)
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
