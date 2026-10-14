@@ -177,3 +177,24 @@ th:first-child,td:first-child{text-align:left}
 .toy4-final-grid{grid-template-columns:repeat(2,1fr)}
 @media(max-width:900px){.toy4-score-dock{grid-template-columns:repeat(2,1fr)}.toy4-reservoir-dashboard{grid-template-columns:180px 1fr}}
 @media(max-width:600px){.toy4-score-dock,.toy4-reservoir-dashboard,.toy4-fed-control .fed-cards{grid-template-columns:1fr}.toy4-reservoir-dashboard{display:grid}.toy4-reservoir-shell{height:110px}}
+
+/* Toy 4 Fed opportunity market + stronger scoreboard */
+.toy4-score-dock{padding:12px;gap:12px;border:2px solid #b8c8d6;box-shadow:0 8px 24px rgba(23,63,99,.18)}
+.toy4-score-dock>div{min-height:82px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;column-gap:10px}
+.toy4-score-dock>div>span:not(.toy4-avatar){font-size:.88rem;align-self:center}
+.toy4-score-dock>div>b{font-size:1.45rem;grid-column:3;grid-row:1/3;align-self:center}
+.toy4-score-dock>div>small{font-size:.76rem;grid-column:2;grid-row:2}
+.toy4-avatar{width:46px;height:46px;border-radius:50%;display:flex!important;align-items:center;justify-content:center;grid-row:1/3;font-size:1.05rem!important;font-weight:900;color:#fff;letter-spacing:.02em}
+.toy4-avatar.a{background:#527fa3}.toy4-avatar.b{background:#8aa9bf}.toy4-avatar.fed{background:#60764f;border-radius:12px}
+.toy4-player-top .toy4-avatar{display:inline-flex!important;margin-right:10px;vertical-align:middle}
+.toy4-end-turn.top{position:sticky;top:112px;z-index:25;margin:8px 0 16px;font-size:1.08rem;padding:16px;box-shadow:0 5px 16px rgba(23,63,99,.16)}
+.toy4-enhancement-hand{width:100%;border-top:1px solid #e1e6eb;padding-top:12px}
+.toy4-enhancement-card{border:2px solid #6e98b7;border-radius:13px;padding:12px;background:#f4f8fb;display:flex;flex-direction:column;gap:7px;min-height:135px}
+.toy4-enhancement-card>span{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;font-weight:800}
+.toy4-enhancement-card>b{font-size:1.18rem}.toy4-enhancement-card>strong{font-size:.92rem}.toy4-enhancement-card>small{font-size:.72rem;color:#66727d}
+.toy4-card-actions{display:flex;gap:7px;margin-top:auto}.toy4-card-actions button{flex:1;border:1px solid #9fb0bf;background:#fff;color:#173f63;border-radius:8px;padding:7px;font-weight:800}.toy4-card-actions button.selected{background:#277048;color:#fff;border-color:#277048}.toy4-card-actions button:disabled{opacity:.45;cursor:not-allowed}
+.toy4-lost-strip{width:100%;display:flex;gap:8px;align-items:stretch;overflow:auto;padding:10px;border-radius:10px;background:#f7f7f7;border:1px solid #ddd}
+.toy4-lost-strip>strong{align-self:center;white-space:nowrap;font-size:.78rem}.toy4-lost-card{position:relative;min-width:170px;display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px solid #c8c8c8;border-radius:8px;background:#eee;color:#666;opacity:.8}
+.toy4-lost-card small{display:block;font-size:.68rem;margin-top:2px}.toy4-x{font-size:2rem;font-weight:900;color:#a33;line-height:1}
+@media(max-width:900px){.toy4-end-turn.top{top:180px}.toy4-score-dock>div{min-height:72px}}
+@media(max-width:600px){.toy4-end-turn.top{position:static}.toy4-score-dock>div{grid-template-columns:auto 1fr auto}}

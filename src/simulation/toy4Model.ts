@@ -12,8 +12,10 @@ export interface WildCard {
 }
 
 export interface SupplyEnhancementCard {
+  id?:string
   quantity:number
-  reward:number
+  cost?:number
+  reward?:number
 }
 
 export interface Toy4TurnDraw {
@@ -30,6 +32,7 @@ export interface Toy4TurnDraw {
   wildCardB:WildCard|null
   systemRequirement:number
   supplyEnhancement:SupplyEnhancementCard|null
+  enhancementLossRolls?:number[]
 }
 
 export interface Toy4Decision {
@@ -93,7 +96,7 @@ const PROFITS_B=[3,3.5,4,4.5,5]
 const TOY4_HYDROLOGY=Array.from({length:25},(_,i)=>3+i*0.5)
 const SYSTEM_REQUIREMENTS=[0,0,0,0,0.5,0.5,0.5,0.5,0.5,1,1,1,1,1,1,1.5,1.5,1.5,2,2]
 const SUPPLY_ENHANCEMENT_QUANTITIES=[0.5,1,1.5]
-const SUPPLY_ENHANCEMENT_REWARDS=[5,10,15]
+const SUPPLY_ENHANCEMENT_COSTS=[5,10,15]
 
 const SUPPLEMENTAL_VARIANTS=[
   {quantity:0.5,cost:1.5},
@@ -110,9 +113,12 @@ function pick<T>(items:T[],r:number){
   return items[Math.min(items.length-1,Math.floor(r*items.length))]
 }
 
-function drawSupplyEnhancement(rand:()=>number):SupplyEnhancementCard|null{
-  if(rand()>=0.5) return null
-  return {quantity:pick(SUPPLY_ENHANCEMENT_QUANTITIES,rand()),reward:pick(SUPPLY_ENHANCEMENT_REWARDS,rand())}
+function drawSupplyEnhancement(rand:()=>number,turn:number):SupplyEnhancementCard{
+  return {
+    id:`fed-enhancement-t${turn}`,
+    quantity:pick(SUPPLY_ENHANCEMENT_QUANTITIES,rand()),
+    cost:pick(SUPPLY_ENHANCEMENT_COSTS,rand())
+  }
 }
 
 function drawWildCard(rand:()=>number,turn:number,player:Toy4Player):WildCard|null{
@@ -155,7 +161,8 @@ export function createToy4Scenario(
       wildCardA:drawWildCard(rand,turn,'A'),
       wildCardB:drawWildCard(rand,turn,'B'),
       systemRequirement,
-      supplyEnhancement:drawSupplyEnhancement(rand)
+      supplyEnhancement:drawSupplyEnhancement(rand,turn),
+      enhancementLossRolls:[rand(),rand(),rand()]
     })
   }
   return out
@@ -209,12 +216,16 @@ export function resolveToy4Turn(
   handA:WildCard[],
   handB:WildCard[],
   serveSystemDemand:boolean=false,
-  acceptSupplyEnhancement:boolean=false,
+  pendingEnhancementQuantity:number|boolean=0,
   c:SimulationConfig=defaultConfig
 ):Toy4TurnResult{
-  const supplyEnhancementAccepted=Boolean(acceptSupplyEnhancement&&draw.supplyEnhancement)
-  const supplyEnhancementQuantity=supplyEnhancementAccepted?(draw.supplyEnhancement?.quantity??0):0
-  const supplyEnhancementReward=supplyEnhancementAccepted?(draw.supplyEnhancement?.reward??0):0
+  // Supply Enhancement is purchased in the prior turn and affects this turn's
+  // hydrology before the normal A -> B -> Fed allocation is applied.
+  const supplyEnhancementQuantity=typeof pendingEnhancementQuantity==='boolean'
+    ?(pendingEnhancementQuantity?(draw.supplyEnhancement?.quantity??0):0)
+    :Math.max(0,pendingEnhancementQuantity)
+  const supplyEnhancementAccepted=supplyEnhancementQuantity>0
+  const supplyEnhancementReward=0
   const effectiveInflow=draw.inflow+supplyEnhancementQuantity
   const allocation=allocateInflow(effectiveInflow,{...c,excessAllocationMode:'fed'})
   const allocationA=allocation.allocationA
@@ -314,7 +325,7 @@ export function resolveToy4Turn(
 
   const fedReleaseReward=fedRelease>0||draw.systemRequirement===0?draw.systemRequirement*10:0
   const fedUnmetPenalty=fedRelease+1e-9>=draw.systemRequirement?0:draw.systemRequirement*15
-  const fedProtectionBonus=totalStorage===0?-30:totalStorage>=4?30:totalStorage>=2?10:0
+  const fedProtectionBonus=totalStorage===0?-30:totalStorage>=4?15:totalStorage>=2?10:0
 
   return {
     turn:draw.turn,
