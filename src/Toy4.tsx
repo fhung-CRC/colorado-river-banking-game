@@ -43,7 +43,7 @@ export default function Toy4(p:Toy4Props){
   const [lastB,setLastB]=useState<Toy4Settlement|null>(null)
   const [history,setHistory]=useState<Toy4TurnResult[]>([])
   const [message,setMessage]=useState('Start Toy 4 to deal the first turn.')
-  const [finalScore,setFinalScore]=useState<{A:number;B:number}|null>(null)
+  const [finalScore,setFinalScore]=useState<{A:number;B:number;Fed:number}|null>(null)
 
   const active=scenario[turnIndex]
   const turnsRemaining=active?scenario.length-turnIndex:0
@@ -105,7 +105,7 @@ export default function Toy4(p:Toy4Props){
     if(turnIndex+1>=scenario.length){
       const finalA=nextScoreA+terminalSecurityValue('A',result.endBalances.A)
       const finalB=nextScoreB+terminalSecurityValue('B',result.endBalances.B)
-      setFinalScore({A:finalA,B:finalB})
+      setFinalScore({A:finalA,B:finalB,Fed:nextScoreFed})
       setScenario([])
       setHandA(nextHandA);setHandB(nextHandB)
       setMessage('Game complete. Final-turn earnings and end-game security value have been added.')
@@ -143,11 +143,14 @@ export default function Toy4(p:Toy4Props){
     </section>
 
     {active&&<>
-      <section className="toy4-score-dock" style={{display:"none"}}>
+      <section className="toy4-score-dock">
         <div><span>Player A</span><b>{money(scoreA)}</b><small>Bank {fmt(balances.A)} MAF</small></div>
         <div><span>Player B</span><b>{money(scoreB)}</b><small>Bank {fmt(balances.B)} MAF</small></div>
         <div><span>Fed / System Operator</span><b>{money(scoreFed)}</b><small>Bank {fmt(balances.Fed)} MAF</small></div>
+        <div className="toy4-system-score"><span>System Storage</span><b>{fmt(totalStorage)} MAF</b><small>{fmt(totalStorage/p.config.reservoirCapacity*100)}% of capacity</small></div>
       </section>
+
+      <ReservoirDashboard storage={totalStorage} capacity={p.config.reservoirCapacity} history={history}/>
 
       <section className="toy4-system-strip">
         <div><span>Turn</span><b>{active.turn} of {scenario.length}</b><small>{turnsRemaining-1} after this turn</small></div>
@@ -159,8 +162,17 @@ export default function Toy4(p:Toy4Props){
 
       <section className="panel toy4-fed-control">
         <div className="toy4-player-top"><div><span className="eyebrow">Fed / System Operator</span><h2>Score {money(scoreFed)}</h2></div><div className="toy4-bank-chip">Bank <b>{fmt(balances.Fed)} MAF</b><small>System resilience account</small></div></div>
-        <div className="toy4-cards"><GameCard kind="demand" title="System Demand" value={fmt(active.systemRequirement)+" MAF"} note={active.systemRequirement===0?"No release required this turn.":balances.Fed>=active.systemRequirement?"Serve all or ignore and accept the penalty.":"Fed bank is too low to serve the full demand."}/>{active.supplyEnhancement?<GameCard kind="allocation" title="Supply Enhancement Opportunity" value={"+"+fmt(active.supplyEnhancement.quantity)+" MAF"} note={"Current-turn system value "+money(active.supplyEnhancement.reward)+". Accept now or lose the opportunity."}/>:<div className="toy4-no-card">No Supply Enhancement opportunity this turn</div>}</div>
-        <div className="toy4-decision"><h3>Fed decision</h3><div className="toy4-decision-inputs"><button type="button" disabled={active.systemRequirement===0||balances.Fed<active.systemRequirement} className={serveSystemDemand?"selected":""} onClick={()=>setServeSystemDemand(v=>!v)}>{active.systemRequirement===0?"No System Demand":serveSystemDemand?"SERVING SYSTEM DEMAND":"SERVE / IGNORE SYSTEM DEMAND"}</button>{active.supplyEnhancement&&<button type="button" className={acceptSupplyEnhancement?"selected":""} onClick={()=>setAcceptSupplyEnhancement(v=>!v)}>{acceptSupplyEnhancement?"ACCEPTING SUPPLY ENHANCEMENT":"ACCEPT / DECLINE SUPPLY ENHANCEMENT"}</button>}</div><p>{serveSystemDemand?("Serve "+fmt(active.systemRequirement)+" MAF: +"+money(active.systemRequirement*10)+"."):("Ignore: -"+money(active.systemRequirement*15)+".")} {acceptSupplyEnhancement&&active.supplyEnhancement?(" Enhancement adds "+fmt(active.supplyEnhancement.quantity)+" MAF to this turn hydrology and +"+money(active.supplyEnhancement.reward)+" to Fed score."):""}</p></div>
+        <div className="toy4-cards fed-cards">
+          <button type="button" disabled={active.systemRequirement===0||balances.Fed<active.systemRequirement} className={"toy4-card demand clickable "+(serveSystemDemand?"selected":"")} onClick={()=>setServeSystemDemand(v=>!v)}>
+            <span>System Demand</span><b>{fmt(active.systemRequirement)} MAF</b>
+            <small>{active.systemRequirement===0?"No demand this turn.":serveSystemDemand?"SELECTED · Serve full demand · Reward +"+money(active.systemRequirement*10):balances.Fed<active.systemRequirement?"Cannot fully serve · Penalty -"+money(active.systemRequirement*15):"CLICK TO SERVE · Ignore = penalty -"+money(active.systemRequirement*15)}</small>
+          </button>
+          {active.supplyEnhancement?<button type="button" className={"toy4-card allocation clickable "+(acceptSupplyEnhancement?"selected":"")} onClick={()=>setAcceptSupplyEnhancement(v=>!v)}>
+            <span>Supply Enhancement Opportunity</span><b>+{fmt(active.supplyEnhancement.quantity)} MAF</b>
+            <small>{acceptSupplyEnhancement?"SELECTED · Current-turn reward +"+money(active.supplyEnhancement.reward):"CLICK TO ACCEPT · Reward +"+money(active.supplyEnhancement.reward)+" · Expires this turn"}</small>
+          </button>:<div className="toy4-no-card">No Supply Enhancement opportunity this turn</div>}
+        </div>
+        <div className="toy4-decision"><h3>Fed turn preview</h3><p>{serveSystemDemand?("System Demand served: +"+money(active.systemRequirement*10)+"."):("System Demand ignored: -"+money(active.systemRequirement*15)+".")} {acceptSupplyEnhancement&&active.supplyEnhancement?("Supply Enhancement: +"+money(active.supplyEnhancement.reward)+"."):""} Click a Fed card again to cancel that decision before ending the turn.</p></div>
       </section>
 
       <section className="toy4-board">
@@ -184,9 +196,12 @@ export default function Toy4(p:Toy4Props){
       <div className="toy4-final-grid">
         <div><span>Player A earnings before terminal value</span><b>{money(scoreA)}</b><small>Bank {fmt(finalBalances.A)} MAF × $3 = {money(terminalSecurityValue('A',finalBalances.A))}</small><strong>{money(finalScore.A)}</strong></div>
         <div><span>Player B earnings before terminal value</span><b>{money(scoreB)}</b><small>Bank {fmt(finalBalances.B)} MAF × $4 = {money(terminalSecurityValue('B',finalBalances.B))}</small><strong>{money(finalScore.B)}</strong></div>
+        <div><span>Fed / System Operator final score</span><b>System performance</b><small>Demand rewards/penalties + enhancement rewards + storage protection</small><strong>{money(finalScore.Fed)}</strong></div>
+        <div><span>Final reservoir storage</span><b>{fmt(finalBalances.A+finalBalances.B+finalBalances.Fed)} / {fmt(p.config.reservoirCapacity)} MAF</b><small>A {fmt(finalBalances.A)} · B {fmt(finalBalances.B)} · Fed {fmt(finalBalances.Fed)} MAF</small><strong>{fmt((finalBalances.A+finalBalances.B+finalBalances.Fed)/p.config.reservoirCapacity*100)}%</strong></div>
       </div>
     </section>}
 
+    {!active&&finalScore&&<ReservoirDashboard storage={finalBalances.A+finalBalances.B+finalBalances.Fed} capacity={p.config.reservoirCapacity} history={history}/>}
     <section className="rules"><strong>Toy 4 core rules:</strong> allocation and demand are newly dealt and resolved every turn. Any annual allocation left unused after demand is served is banked automatically, subject to account and reservoir limits. Supplemental cards can serve current demand and therefore free annual allocation for banking, but supplemental water itself cannot be banked. Demand Flexibility reduces the water required to produce the same goods and services without reducing profit-eligible demand. Banked water and unused wild cards persist, with up to six wild cards per player; B has a higher chance of drawing one each turn. Toy 4 has no fixed protection floor. A, B, and Fed have independent accounts and can use only their own stored water. Fed starts with 2 MAF and receives a System Demand card each turn: the full demand is either served from the opening Fed bank or ignored for the penalty. Fed may also receive a one-turn Supply Enhancement opportunity; accepting it adds 0.5, 1.0, or 1.5 MAF to current-turn hydrology and earns the card's $5, $10, or $15 system-value reward. The opportunity expires after the turn. Fed also receives an ending-storage score of -$30 at zero storage, $0 below 2 MAF, $10 from 2 to under 4 MAF, and $30 at 4 MAF or more. This turn's unit profit stays hidden until the next turn, and unserved demand earns no revenue and may incur an escalating shortage penalty.</section>
   </>
 }
@@ -287,4 +302,15 @@ function GameCard({kind,title,value,note}:{kind:string;title:string;value:string
     <b>{value}</b>
     <small>{note}</small>
   </div>
+}
+
+function ReservoirDashboard({storage,capacity,history}:{storage:number;capacity:number;history:Toy4TurnResult[]}){
+  const pct=Math.max(0,Math.min(100,capacity>0?storage/capacity*100:0))
+  const points=[5,...history.map(h=>h.totalStorage)]
+  const width=360,height=95,pad=8
+  const poly=points.map((v,i)=>{const x=points.length===1?pad:pad+i*(width-pad*2)/(points.length-1);const y=height-pad-(Math.max(0,Math.min(capacity,v))/capacity)*(height-pad*2);return x+','+y}).join(' ')
+  return <section className="panel toy4-reservoir-dashboard">
+    <div className="toy4-reservoir-visual"><div className="toy4-reservoir-title"><span>System Reservoir</span><b>{fmt(storage)} / {fmt(capacity)} MAF</b></div><div className="toy4-reservoir-shell"><div className="toy4-reservoir-water" style={{height:pct+'%'}}></div><strong>{fmt(pct)}%</strong></div></div>
+    <div className="toy4-storage-history"><span>Storage history</span><svg viewBox={'0 0 '+width+' '+height} role="img" aria-label="Reservoir storage history"><line x1={pad} y1={height-pad} x2={width-pad} y2={height-pad}/><polyline points={poly}/>{points.map((v,i)=>{const x=points.length===1?pad:pad+i*(width-pad*2)/(points.length-1);const y=height-pad-(Math.max(0,Math.min(capacity,v))/capacity)*(height-pad*2);return <circle key={i} cx={x} cy={y} r="3"/>})}</svg><small>Turn 0 through Turn {history.length} · Capacity {fmt(capacity)} MAF</small></div>
+  </section>
 }
