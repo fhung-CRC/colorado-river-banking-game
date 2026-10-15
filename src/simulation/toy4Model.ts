@@ -403,6 +403,7 @@ export function terminalSecurityValue(player:Toy4Player,bank:number){
 }
 
 export function terminalFedResilienceValue(totalStorage:number){
-  return Math.max(0,totalStorage)*5
+  const storage=Math.max(0,totalStorage)
+  return storage*(storage<=2?5:10)
 }
 
