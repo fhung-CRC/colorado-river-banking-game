@@ -100,7 +100,7 @@ export default function Toy4(p:Toy4Props){
       ?[currentEnhancement,...heldEnhancements].find(card=>card?.id===enhancementAction.id)??null
       :null
     const investmentCost=investCard?.cost??0
-    const result=resolveToy4Turn(balances,active,decisionA,decisionB,handA,handB,serveSystemDemand,pendingEnhancement,p.config)
+    const result=resolveToy4Turn(balances,active,decisionA,decisionB,handA,handB,serveSystemDemand,pendingEnhancement,{...p.config,bankLimitFed:10})
     const settlementA=settleToy4Player(result.playerA)
     const settlementB=settleToy4Player(result.playerB)
     const nextScoreA=scoreA+settlementA.netEarnings
@@ -191,7 +191,7 @@ export default function Toy4(p:Toy4Props){
       </section>
 
       <section className="panel toy4-fed-control">
-        <div className="toy4-player-top"><div><span className="toy4-avatar fed">FED</span><span className="eyebrow">System Operator</span><h2>Fed Score {money(scoreFed)}</h2></div><div className="toy4-bank-chip">Bank <b>{fmt(balances.Fed)} MAF</b><small>System resilience account</small></div></div>
+        <div className="toy4-player-top"><div><span className="toy4-avatar fed">FED</span><span className="eyebrow">System Operator</span><h2>Fed Score {money(scoreFed)}</h2></div><div className="toy4-bank-chip">Bank <b>{fmt(balances.Fed)} MAF</b><small>System resilience account · 10 MAF limit</small></div></div>
         <div className="toy4-settlement">
           <span>Last turn statement</span>
           {lastFed?<div className="toy4-settlement-grid">
@@ -221,7 +221,7 @@ export default function Toy4(p:Toy4Props){
           </div>
         </div>
         {lostEnhancements.length>0&&<div className="toy4-lost-strip"><strong>Lost opportunities</strong>{lostEnhancements.map((x,i)=><div key={(x.card.id??'lost')+i} className="toy4-lost-card"><span className="toy4-x">×</span><div><b>{x.reason}</b><small>+{fmt(x.card.quantity)} MAF · Cost {money(x.card.cost??0)}</small></div></div>)}</div>}
-        <div className="toy4-decision"><h3>Fed turn score preview</h3><p>System Demand: {active.systemRequirement===0?money(0):serveSystemDemand?('+'+money(active.systemRequirement*10)):('-'+money(active.systemRequirement*15))}. There is no recurring positive storage bonus; complete system-storage collapse carries -$30. Final reservoir storage earns a terminal resilience value of $5 per MAF. {enhancementAction?.action==='invest'?('Enhancement investment cost: -'+money(([currentEnhancement,...heldEnhancements].find(x=>x?.id===enhancementAction?.id)?.cost??0))+'.'):'No enhancement investment cost selected.'}</p></div>
+        <div className="toy4-decision"><h3>Fed turn score preview</h3><p>System Demand: {active.systemRequirement===0?money(0):serveSystemDemand?('+'+money(active.systemRequirement*10)):('-'+money(active.systemRequirement*15))}. There is no recurring positive storage bonus; complete system-storage collapse carries -$30. Final reservoir storage earns $5/MAF at 2 MAF or less and $10/MAF above 2 MAF. {enhancementAction?.action==='invest'?('Enhancement investment cost: -'+money(([currentEnhancement,...heldEnhancements].find(x=>x?.id===enhancementAction?.id)?.cost??0))+'.'):'No enhancement investment cost selected.'}</p></div>
       </section>
 
       <section className="toy4-board">
@@ -244,13 +244,13 @@ export default function Toy4(p:Toy4Props){
       <div className="toy4-final-grid">
         <div><span>Player A earnings before terminal value</span><b>{money(scoreA)}</b><small>Bank {fmt(finalBalances.A)} MAF × $3 = {money(terminalSecurityValue('A',finalBalances.A))}</small><strong>{money(finalScore.A)}</strong></div>
         <div><span>Player B earnings before terminal value</span><b>{money(scoreB)}</b><small>Bank {fmt(finalBalances.B)} MAF × $4 = {money(terminalSecurityValue('B',finalBalances.B))}</small><strong>{money(finalScore.B)}</strong></div>
-        <div><span>Fed / System Operator final score</span><b>System performance</b><small>Operating score + final system resilience value ($5 per MAF of total reservoir storage)</small><strong>{money(finalScore.Fed)}</strong></div>
+        <div><span>Fed / System Operator final score</span><b>System performance</b><small>Operating score + final system resilience value ($5/MAF at ≤2 MAF; $10/MAF above 2 MAF)</small><strong>{money(finalScore.Fed)}</strong></div>
         <div><span>Final reservoir storage</span><b>{fmt(finalBalances.A+finalBalances.B+finalBalances.Fed)} / {fmt(p.config.reservoirCapacity)} MAF</b><small>A {fmt(finalBalances.A)} · B {fmt(finalBalances.B)} · Fed {fmt(finalBalances.Fed)} MAF</small><strong>{fmt((finalBalances.A+finalBalances.B+finalBalances.Fed)/p.config.reservoirCapacity*100)}%</strong></div>
       </div>
     </section>}
 
     {!active&&finalScore&&<ReservoirDashboard storage={finalBalances.A+finalBalances.B+finalBalances.Fed} capacity={p.config.reservoirCapacity} history={history}/>}
-    <section className="rules"><strong>Toy 4 core rules:</strong> allocation and demand are newly dealt every turn. Effective hydrology is allocated A first 5 MAF, B next 5 MAF, and any amount above 10 MAF to Fed. Fed starts with 2 MAF. System Demand defaults to Serve whenever the Fed account has enough water; the player may click the card to Ignore it. Insufficient Fed storage is flagged and demand cannot be served. Served demand earns +$10/MAF and unserved or ignored demand costs -$15/MAF. Positive storage is not rewarded every turn; complete system-storage collapse costs -$30, while final total reservoir storage earns Fed $5/MAF as terminal resilience value. Fed may keep up to three Supply Enhancement cards in one hand. Uninvested cards face a 35% loss risk before the next turn. Investing deducts the card cost and adds its water to next turn's unknown natural hydrology before normal A → B → Fed allocation. Only one enhancement can be invested per turn.</section>
+    <section className="rules"><strong>Toy 4 core rules:</strong> allocation and demand are newly dealt every turn. Effective hydrology is allocated A first 5 MAF, B next 5 MAF, and any amount above 10 MAF to Fed. Fed starts with 2 MAF. System Demand defaults to Serve whenever the Fed account has enough water; the player may click the card to Ignore it. Insufficient Fed storage is flagged and demand cannot be served. Served demand earns +$10/MAF and unserved or ignored demand costs -$15/MAF. Positive storage is not rewarded every turn; complete system-storage collapse costs -$30, while final total reservoir storage earns Fed $5/MAF at 2 MAF or less and $10/MAF above 2 MAF as terminal resilience value. Fed may keep up to three Supply Enhancement cards in one hand. Uninvested cards face a 35% loss risk before the next turn. Investing deducts the card cost and adds its water to next turn's unknown natural hydrology before normal A → B → Fed allocation. Only one enhancement can be invested per turn.</section>
   </>
 }
 
