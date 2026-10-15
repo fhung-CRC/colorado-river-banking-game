@@ -325,7 +325,9 @@ export function resolveToy4Turn(
 
   const fedReleaseReward=fedRelease>0||draw.systemRequirement===0?draw.systemRequirement*10:0
   const fedUnmetPenalty=fedRelease+1e-9>=draw.systemRequirement?0:draw.systemRequirement*15
-  const fedProtectionBonus=totalStorage===0?-30:totalStorage>=4?15:totalStorage>=2?10:0
+  // Storage protection is no longer a recurring positive reward. A complete
+  // system-storage collapse still carries an immediate operating penalty.
+  const fedProtectionBonus=totalStorage===0?-30:0
 
   return {
     turn:draw.turn,
@@ -398,5 +400,10 @@ export function settleToy4Player(result:Toy4PlayerResult):Toy4Settlement{
 export function terminalSecurityValue(player:Toy4Player,bank:number){
   const rate=player==='A'?3:4
   return Math.max(0,bank)*rate
+}
+
+export function terminalFedResilienceValue(totalStorage:number){
+  const storage=Math.max(0,totalStorage)
+  return storage*(storage<=2?5:10)
 }
 

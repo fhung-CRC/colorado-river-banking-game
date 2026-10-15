@@ -295,7 +295,7 @@ describe('Toy 4 turn-based card game',()=>{
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
 
-  it('scores Fed for serving the System Requirement and protecting storage',async()=>{
+  it('scores Fed for serving System Demand without a recurring positive storage bonus',async()=>{
     const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
     const draw={turn:1,inflow:5,allocationA:5,allocationB:0,federalAllocation:0,demandA:5,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,wildCardA:null,wildCardB:null,systemRequirement:1,supplyEnhancement:null}
     const d={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
@@ -303,7 +303,7 @@ describe('Toy 4 turn-based card game',()=>{
     expect(r.fedRelease).toBeCloseTo(1)
     expect(r.fedReleaseReward).toBeCloseTo(10)
     expect(r.fedUnmetPenalty).toBeCloseTo(0)
-    expect(r.fedProtectionBonus).toBe(15)
+    expect(r.fedProtectionBonus).toBe(0)
     expect(r.endBalances.Fed).toBeCloseTo(1)
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
