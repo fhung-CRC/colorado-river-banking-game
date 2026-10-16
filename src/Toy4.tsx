@@ -44,7 +44,7 @@ export default function Toy4(p:Toy4Props){
   const [lostEnhancements,setLostEnhancements]=useState<{card:SupplyEnhancementCard;reason:string}[]>([])
   const [lastA,setLastA]=useState<Toy4Settlement|null>(null)
   const [lastB,setLastB]=useState<Toy4Settlement|null>(null)
-  const [lastFed,setLastFed]=useState<{demand:number;served:number;demandScore:number;emergencyPenalty:number;investmentCost:number;net:number}|null>(null)
+  const [lastFed,setLastFed]=useState<{demand:number;served:number;demandScore:number;hydropowerRevenue:number;emergencyPenalty:number;investmentCost:number;net:number}|null>(null)
   const [history,setHistory]=useState<Toy4TurnResult[]>([])
   const [message,setMessage]=useState('Start Toy 4 to deal the first turn.')
   const [finalScore,setFinalScore]=useState<{A:number;B:number;Fed:number}|null>(null)
@@ -120,7 +120,7 @@ export default function Toy4(p:Toy4Props){
     const settlementB=settleToy4Player(result.playerB)
     const nextScoreA=scoreA+settlementA.netEarnings
     const nextScoreB=scoreB+settlementB.netEarnings
-    const fedTurnNet=result.fedReleaseReward-result.fedUnmetPenalty+result.fedProtectionBonus-investmentCost
+    const fedTurnNet=result.fedReleaseReward-result.fedUnmetPenalty+result.hydropowerRevenue+result.fedProtectionBonus-investmentCost
     const nextScoreFed=scoreFed+fedTurnNet
     const usedA=new Set(decisionA.selectedWildCardIds)
     const usedB=new Set(decisionB.selectedWildCardIds)
@@ -132,7 +132,7 @@ export default function Toy4(p:Toy4Props){
     setHistory(h=>[...h,result])
     setBalances(result.endBalances)
     setLastA(settlementA);setLastB(settlementB)
-    setLastFed({demand:active.systemRequirement,served:result.fedRelease,demandScore:result.fedReleaseReward-result.fedUnmetPenalty,emergencyPenalty:result.fedProtectionBonus,investmentCost,net:fedTurnNet})
+    setLastFed({demand:active.systemRequirement,served:result.fedRelease,demandScore:result.fedReleaseReward-result.fedUnmetPenalty,hydropowerRevenue:result.hydropowerRevenue,emergencyPenalty:result.fedProtectionBonus,investmentCost,net:fedTurnNet})
     setScoreA(nextScoreA);setScoreB(nextScoreB);setScoreFed(nextScoreFed)
 
     if(turnIndex+1>=scenario.length){
@@ -213,35 +213,41 @@ export default function Toy4(p:Toy4Props){
             <div><small>System demand</small><b>{fmt(lastFed.demand)} MAF</b></div>
             <div><small>Served</small><b>{fmt(lastFed.served)} MAF</b></div>
             <div><small>Demand score</small><b>{money(lastFed.demandScore)}</b></div>
+            <div><small>Hydropower revenue</small><b>+{money(lastFed.hydropowerRevenue)}</b></div>
             <div><small>Investment</small><b>-{money(lastFed.investmentCost)}</b></div>
             <div><small>Net score</small><b>{money(lastFed.net)}</b></div>
           </div>:<p>No previous turn yet.</p>}
         </div>
-        <div className="toy4-cards fed-cards">
-          <GameCard kind="bank" title="Banked Water" value={fmt(balances.Fed)+' MAF'} note="Operational reserve · 10 MAF limit."/>
-          <button type="button" disabled={active.systemRequirement===0||balances.Fed<active.systemRequirement}
-            className={"toy4-card demand clickable "+(serveSystemDemand?"selected ":"")+(balances.Fed<active.systemRequirement&&active.systemRequirement>0?"insufficient":"")}
-            onClick={()=>setServeSystemDemand(v=>!v)}>
-            <span>{active.systemReleaseType} Release</span><b>{fmt(active.systemRequirement)} MAF</b>
-            <small>{active.systemRequirement===0?"No system demand · score impact $0":balances.Fed<active.systemRequirement?"⚠ INSUFFICIENT STORAGE · cannot serve · -"+money(active.systemRequirement*15):serveSystemDemand?"SERVE BY DEFAULT · +"+money(active.systemRequirement*10)+" · click to ignore":"IGNORE SELECTED · -"+money(active.systemRequirement*15)+" · click to serve"}</small>
-          </button>
-          <div className="toy4-enhancement-hand unified">
+        <div className="toy4-fed-sections">
+          <div className="toy4-fed-section">
+            <div className="toy4-hand-title"><strong>Water Operations</strong><span>Current Fed storage and system release decision</span></div>
+            <div className="toy4-fed-primary-cards">
+              <GameCard kind="bank" title="Banked Water" value={fmt(balances.Fed)+' MAF'} note="Operational reserve · 10 MAF limit."/>
+              <button type="button" disabled={active.systemRequirement===0||balances.Fed<active.systemRequirement}
+                className={"toy4-card demand clickable "+(serveSystemDemand?"selected ":"")+(balances.Fed<active.systemRequirement&&active.systemRequirement>0?"insufficient":"")}
+                onClick={()=>setServeSystemDemand(v=>!v)}>
+                <span>{active.systemReleaseType} Release</span><b>{fmt(active.systemRequirement)} MAF</b>
+                <small>{active.systemRequirement===0?"No system demand · score impact $0":balances.Fed<active.systemRequirement?"⚠ INSUFFICIENT STORAGE · cannot serve · -"+money(active.systemRequirement*15):serveSystemDemand?"SERVE BY DEFAULT · +"+money(active.systemRequirement*10)+" · click to ignore":"IGNORE SELECTED · -"+money(active.systemRequirement*15)+" · click to serve"}</small>
+              </button>
+            </div>
+          </div>
+          <div className="toy4-fed-section">
             <div className="toy4-hand-title"><strong>Supply Enhancement</strong><span>{Math.min(3,heldEnhancements.length+(currentEnhancement?1:0))}/3 · click any cards to invest · multiple may be played</span></div>
-            <div className="toy4-hand-cards">
+            <div className="toy4-fed-enhancement-cards">
               {[...heldEnhancements,...(currentEnhancement&&heldEnhancements.length<3?[currentEnhancement]:[])].map(card=><button
                 key={card.id}
                 type="button"
                 className={"toy4-wild-card supply "+(selectedEnhancementIds.includes(card.id??'')?"selected ":"")+(card.id===currentEnhancement?.id?"new":"held")}
                 onClick={()=>card.id&&setSelectedEnhancementIds(ids=>ids.includes(card.id!)?ids.filter(id=>id!==card.id):[...ids,card.id!])}
               >
-                <span>Supply Enhancement</span><b>+{fmt(card.quantity)} MAF</b><strong>Cost {money(card.cost??0)}</strong>
-                <small>{selectedEnhancementIds.includes(card.id??'')?'INVESTING':'HOLD / INVEST'}</small>
+                <span>Supply Enhancement</span><b>+{fmt(card.quantity)} MAF</b>
+                <small>Cost {money(card.cost??0)} · {selectedEnhancementIds.includes(card.id??'')?'INVESTING':'HOLD / INVEST'}</small>
               </button>)}
             </div>
           </div>
         </div>
         {lostEnhancements.length>0&&<div className="toy4-lost-strip"><strong>Lost opportunities</strong>{lostEnhancements.map((x,i)=><div key={(x.card.id??'lost')+i} className="toy4-lost-card"><span className="toy4-x">×</span><div><b>{x.reason}</b><small>+{fmt(x.card.quantity)} MAF · Cost {money(x.card.cost??0)}</small></div></div>)}</div>}
-        <div className="toy4-decision"><h3>Fed turn score preview</h3><p>System Release: {active.systemRequirement===0?money(0):serveSystemDemand?('+'+money(active.systemRequirement*10)):('-'+money(active.systemRequirement*15))}. Ending Fed Banked Water earns a resilience reward: $0 below 2 MAF, +$10 from 2 to under 4 MAF, and +$20 at 4 MAF or more. Final total system storage earns $0 below 2 MAF, $20 at 2 to under 4, $40 at 4 to under 6, $60 at 6 to under 8, and $80 at 8+ MAF. {selectedEnhancementIds.length?('Enhancement investment cost: -'+money([...heldEnhancements,...(currentEnhancement?[currentEnhancement]:[])].filter(x=>x.id&&selectedEnhancementIds.includes(x.id)).reduce((sum,x)=>sum+(x.cost??0),0))+'.'):'No enhancement investment cost selected.'}</p></div>
+        <div className="toy4-decision"><h3>Fed turn score preview</h3><p>System Release: {active.systemRequirement===0?money(0):serveSystemDemand?('+'+money(active.systemRequirement*10)):('-'+money(active.systemRequirement*15))}. Hydropower revenue is added each turn from A+B consumption using a storage-dependent price that remains hidden. Ending Fed Banked Water earns a resilience reward: $0 below 2 MAF, +$10 from 2 to under 4 MAF, and +$20 at 4 MAF or more. Final total system storage earns $0 below 2 MAF, $20 at 2 to under 4, $40 at 4 to under 6, $60 at 6 to under 8, and $80 at 8+ MAF. {selectedEnhancementIds.length?('Enhancement investment cost: -'+money([...heldEnhancements,...(currentEnhancement?[currentEnhancement]:[])].filter(x=>x.id&&selectedEnhancementIds.includes(x.id)).reduce((sum,x)=>sum+(x.cost??0),0))+'.'):'No enhancement investment cost selected.'}</p></div>
       </section>
 
       <section className="toy4-board">
@@ -270,7 +276,7 @@ export default function Toy4(p:Toy4Props){
     </section>}
 
     {!active&&finalScore&&<ReservoirDashboard storage={finalBalances.A+finalBalances.B+finalBalances.Fed} capacity={p.config.reservoirCapacity} history={history}/>}
-    <section className="rules"><strong>Toy 4 core rules:</strong> allocation and demand are newly dealt every turn. Effective hydrology is allocated A first 5 MAF, B next 5 MAF, and any amount above 10 MAF to Fed. Fed starts with 2 MAF. System Demand defaults to Serve whenever the Fed account has enough water; the player may click the card to Ignore it. Insufficient Fed storage is flagged and demand cannot be served. Served demand earns +$10/MAF and unserved or ignored demand costs -$15/MAF. Fed earns a per-turn operational resilience reward from ending Fed Banked Water: $0 below 2 MAF, $10 from 2 to under 4 MAF, and $20 at 4 MAF or more. Final total system storage earns a separate terminal reward of $0 below 2 MAF, $20 at 2 to under 4, $40 at 4 to under 6, $60 at 6 to under 8, and $80 at 8+ MAF. Fed may keep up to three persistent Supply Enhancement cards. Cards remain held automatically until invested or removed by a random event; there is no voluntary discard. Uninvested cards face a 35% loss risk before the next turn. Investing deducts the card cost and adds its water to next turn's unknown natural hydrology before normal A → B → Fed allocation. Any number of held Supply Enhancement cards may be invested in the same turn. Their quantities are combined and added to next turn's unknown natural hydrology before normal A → B → Fed allocation. On the final turn, invested enhancement water is credited directly to final Fed storage, subject to the Fed account and reservoir capacity limits.</section>
+    <section className="rules"><strong>Toy 4 core rules:</strong> allocation and demand are newly dealt every turn. Effective hydrology is allocated A first 5 MAF, B next 5 MAF, and any amount above 10 MAF to Fed. Fed starts with 2 MAF. System Demand defaults to Serve whenever the Fed account has enough water; the player may click the card to Ignore it. Insufficient Fed storage is flagged and demand cannot be served. Served demand earns +$10/MAF and unserved or ignored demand costs -$15/MAF. Fed also earns hydropower revenue equal to A+B supplied demand multiplied by a hidden storage-dependent price: the price rises linearly from $0.20/MAF at 0 MAF storage to $1.00/MAF at 10 MAF and is capped at $1.00/MAF above 10 MAF. Fed earns a per-turn operational resilience reward from ending Fed Banked Water: $0 below 2 MAF, $10 from 2 to under 4 MAF, and $20 at 4 MAF or more. Final total system storage earns a separate terminal reward of $0 below 2 MAF, $20 at 2 to under 4, $40 at 4 to under 6, $60 at 6 to under 8, and $80 at 8+ MAF. Fed may keep up to three persistent Supply Enhancement cards. Cards remain held automatically until invested or removed by a random event; there is no voluntary discard. Uninvested cards face a 35% loss risk before the next turn. Investing deducts the card cost and adds its water to next turn's unknown natural hydrology before normal A → B → Fed allocation. Any number of held Supply Enhancement cards may be invested in the same turn. Their quantities are combined and added to next turn's unknown natural hydrology before normal A → B → Fed allocation. On the final turn, invested enhancement water is credited directly to final Fed storage, subject to the Fed account and reservoir capacity limits.</section>
   </>
 }
 
