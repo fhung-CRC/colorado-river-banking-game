@@ -71,6 +71,7 @@ export interface Toy4TurnResult {
   fedReleaseReward:number
   fedUnmetPenalty:number
   fedProtectionBonus:number
+  hydropowerRevenue:number
   supplyEnhancementAccepted:boolean
   supplyEnhancementQuantity:number
   supplyEnhancementReward:number
@@ -331,6 +332,12 @@ export function resolveToy4Turn(
   // Per-turn operational resilience reward is based on water the Fed controls.
   // This rewards flexibility without double-counting A/B storage during play.
   const fedProtectionBonus=endBalances.Fed>=4?20:endBalances.Fed>=2?10:0
+  // Hydropower price is intentionally hidden from players. It rises linearly
+  // with opening system storage from $0.20/MAF at 0 MAF to $1.00/MAF at 10 MAF,
+  // then remains capped at $1.00/MAF.
+  const hydropowerPrice=0.2+0.08*Math.min(10,Math.max(0,startStorage))
+  const totalConsumption=servedA+servedB
+  const hydropowerRevenue=hydropowerPrice*totalConsumption
 
   return {
     turn:draw.turn,
@@ -376,6 +383,7 @@ export function resolveToy4Turn(
     fedReleaseReward,
     fedUnmetPenalty,
     fedProtectionBonus,
+    hydropowerRevenue,
     supplyEnhancementAccepted,
     supplyEnhancementQuantity,
     supplyEnhancementReward,
