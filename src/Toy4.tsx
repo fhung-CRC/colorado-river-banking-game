@@ -39,7 +39,7 @@ export default function Toy4(p:Toy4Props){
   const [scoreFed,setScoreFed]=useState(0)
   const [serveSystemDemand,setServeSystemDemand]=useState(true)
   const [heldEnhancements,setHeldEnhancements]=useState<SupplyEnhancementCard[]>([])
-  const [enhancementAction,setEnhancementAction]=useState<{id:string;action:'invest'}|null>(null)
+  const [selectedEnhancementIds,setSelectedEnhancementIds]=useState<string[]>([])
   const [pendingEnhancement,setPendingEnhancement]=useState(0)
   const [lostEnhancements,setLostEnhancements]=useState<{card:SupplyEnhancementCard;reason:string}[]>([])
   const [lastA,setLastA]=useState<Toy4Settlement|null>(null)
@@ -77,7 +77,7 @@ export default function Toy4(p:Toy4Props){
     setDecisionA(blankDecision())
     setDecisionB(blankDecision())
     setScoreA(0);setScoreB(0);setScoreFed(0)
-    setServeSystemDemand((next[0]?.systemRequirement??0)<=TOY4_START_BALANCES.Fed);setHeldEnhancements([]);setEnhancementAction(null);setPendingEnhancement(0);setLostEnhancements([])
+    setServeSystemDemand((next[0]?.systemRequirement??0)<=TOY4_START_BALANCES.Fed);setHeldEnhancements([]);setSelectedEnhancementIds([]);setPendingEnhancement(0);setLostEnhancements([])
     setLastA(null);setLastB(null);setLastFed(null)
     setHistory([])
     setFinalScore(null)
@@ -96,11 +96,26 @@ export default function Toy4(p:Toy4Props){
 
   function endTurn(){
     if(!active) return
-    const investCard=enhancementAction?.action==='invest'
-      ?[currentEnhancement,...heldEnhancements].find(card=>card?.id===enhancementAction.id)??null
-      :null
-    const investmentCost=investCard?.cost??0
-    const result=resolveToy4Turn(balances,active,decisionA,decisionB,handA,handB,serveSystemDemand,pendingEnhancement,{...p.config,bankLimitFed:10})
+    const availableEnhancements=[...heldEnhancements,...(currentEnhancement?[currentEnhancement]:[])]
+    const investCards=availableEnhancements.filter(card=>card.id&&selectedEnhancementIds.includes(card.id))
+    const investedIds=new Set(investCards.map(card=>card.id))
+    const investmentCost=investCards.reduce((sum,card)=>sum+(card.cost??0),0)
+    const investedQuantity=investCards.reduce((sum,card)=>sum+card.quantity,0)
+    let result=resolveToy4Turn(balances,active,decisionA,decisionB,handA,handB,serveSystemDemand,pendingEnhancement,{...p.config,bankLimitFed:10})
+    const isFinalTurn=turnIndex+1>=scenario.length
+    if(isFinalTurn&&investedQuantity>0){
+      const finalSpace=Math.max(0,p.config.reservoirCapacity-result.totalStorage)
+      const fedSpace=Math.max(0,10-result.endBalances.Fed)
+      const accepted=Math.min(investedQuantity,finalSpace,fedSpace)
+      if(accepted>0) result={
+        ...result,
+        inflow:result.inflow+accepted,
+        supplyEnhancementAccepted:true,
+        supplyEnhancementQuantity:accepted,
+        endBalances:{...result.endBalances,Fed:result.endBalances.Fed+accepted},
+        totalStorage:result.totalStorage+accepted
+      }
+    }
     const settlementA=settleToy4Player(result.playerA)
     const settlementB=settleToy4Player(result.playerB)
     const nextScoreA=scoreA+settlementA.netEarnings
@@ -111,8 +126,8 @@ export default function Toy4(p:Toy4Props){
     const usedB=new Set(decisionB.selectedWildCardIds)
     let nextHandA=handA.filter(c=>!usedA.has(c.id))
     let nextHandB=handB.filter(c=>!usedB.has(c.id))
-    let nextHeld=heldEnhancements.filter(card=>card.id!==investCard?.id)
-    if(currentEnhancement&&currentEnhancement.id!==investCard?.id&&nextHeld.length<3) nextHeld=[...nextHeld,currentEnhancement]
+    let nextHeld=heldEnhancements.filter(card=>!investedIds.has(card.id))
+    if(currentEnhancement&&!investedIds.has(currentEnhancement.id)&&nextHeld.length<3) nextHeld=[...nextHeld,currentEnhancement]
 
     setHistory(h=>[...h,result])
     setBalances(result.endBalances)
@@ -145,9 +160,9 @@ export default function Toy4(p:Toy4Props){
     nextHandA=a.hand;nextHandB=b.hand
     setHandA(nextHandA);setHandB(nextHandB);setHeldEnhancements(survived)
     if(lost.length) setLostEnhancements(old=>[...lost,...old].slice(0,3))
-    setPendingEnhancement(investCard?.quantity??0)
+    setPendingEnhancement(investedQuantity)
     setTurnIndex(i=>i+1)
-    setDecisionA(blankDecision());setDecisionB(blankDecision());setServeSystemDemand(nextTurn.systemRequirement<=result.endBalances.Fed);setEnhancementAction(null)
+    setDecisionA(blankDecision());setDecisionB(blankDecision());setServeSystemDemand(nextTurn.systemRequirement<=result.endBalances.Fed);setSelectedEnhancementIds([])
     const lossNote=lost.length?' '+lost.map(x=>x.reason+': +'+fmt(x.card.quantity)+' MAF / '+money(x.card.cost??0)+' opportunity lost.').join(' '):''
     setMessage('Turn '+(turnIndex+2)+' dealt. Last-turn unit profit is now revealed.'+lossNote+a.note+b.note)
   }
@@ -211,18 +226,22 @@ export default function Toy4(p:Toy4Props){
             <small>{active.systemRequirement===0?"No system demand · score impact $0":balances.Fed<active.systemRequirement?"⚠ INSUFFICIENT STORAGE · cannot serve · -"+money(active.systemRequirement*15):serveSystemDemand?"SERVE BY DEFAULT · +"+money(active.systemRequirement*10)+" · click to ignore":"IGNORE SELECTED · -"+money(active.systemRequirement*15)+" · click to serve"}</small>
           </button>
           <div className="toy4-enhancement-hand unified">
-            <div className="toy4-hand-title"><strong>Supply Enhancement Cards</strong><span>{Math.min(3,heldEnhancements.length+(currentEnhancement?1:0))}/3 · uninvested cards face 35% loss risk next turn</span></div>
+            <div className="toy4-hand-title"><strong>Supply Enhancement</strong><span>{Math.min(3,heldEnhancements.length+(currentEnhancement?1:0))}/3 · click any cards to invest · multiple may be played</span></div>
             <div className="toy4-hand-cards">
-              {[...heldEnhancements,...(currentEnhancement&&heldEnhancements.length<3?[currentEnhancement]:[])].map(card=><div key={card.id} className={"toy4-enhancement-card "+(card.id===currentEnhancement?.id?"new":"held")}>
+              {[...heldEnhancements,...(currentEnhancement&&heldEnhancements.length<3?[currentEnhancement]:[])].map(card=><button
+                key={card.id}
+                type="button"
+                className={"toy4-wild-card supply "+(selectedEnhancementIds.includes(card.id??'')?"selected ":"")+(card.id===currentEnhancement?.id?"new":"held")}
+                onClick={()=>card.id&&setSelectedEnhancementIds(ids=>ids.includes(card.id!)?ids.filter(id=>id!==card.id):[...ids,card.id!])}
+              >
                 <span>Supply Enhancement</span><b>+{fmt(card.quantity)} MAF</b><strong>Cost {money(card.cost??0)}</strong>
-                <small>{enhancementAction?.id===card.id?'INVESTING · click to hold':'HOLD / INVEST · click to invest'}</small>
-                <button type="button" className="toy4-card-select" onClick={()=>setEnhancementAction(v=>v?.id===card.id?null:{id:card.id!,action:'invest'})}>{enhancementAction?.id===card.id?'Selected':'Select'}</button>
-              </div>)}
+                <small>{selectedEnhancementIds.includes(card.id??'')?'INVESTING':'HOLD / INVEST'}</small>
+              </button>)}
             </div>
           </div>
         </div>
         {lostEnhancements.length>0&&<div className="toy4-lost-strip"><strong>Lost opportunities</strong>{lostEnhancements.map((x,i)=><div key={(x.card.id??'lost')+i} className="toy4-lost-card"><span className="toy4-x">×</span><div><b>{x.reason}</b><small>+{fmt(x.card.quantity)} MAF · Cost {money(x.card.cost??0)}</small></div></div>)}</div>}
-        <div className="toy4-decision"><h3>Fed turn score preview</h3><p>System Release: {active.systemRequirement===0?money(0):serveSystemDemand?('+'+money(active.systemRequirement*10)):('-'+money(active.systemRequirement*15))}. Ending Fed Banked Water earns a resilience reward: $0 below 2 MAF, +$10 from 2 to under 4 MAF, and +$20 at 4 MAF or more. Final total system storage earns $0 below 2 MAF, $20 at 2 to under 4, $40 at 4 to under 6, $60 at 6 to under 8, and $80 at 8+ MAF. {enhancementAction?.action==='invest'?('Enhancement investment cost: -'+money(([currentEnhancement,...heldEnhancements].find(x=>x?.id===enhancementAction?.id)?.cost??0))+'.'):'No enhancement investment cost selected.'}</p></div>
+        <div className="toy4-decision"><h3>Fed turn score preview</h3><p>System Release: {active.systemRequirement===0?money(0):serveSystemDemand?('+'+money(active.systemRequirement*10)):('-'+money(active.systemRequirement*15))}. Ending Fed Banked Water earns a resilience reward: $0 below 2 MAF, +$10 from 2 to under 4 MAF, and +$20 at 4 MAF or more. Final total system storage earns $0 below 2 MAF, $20 at 2 to under 4, $40 at 4 to under 6, $60 at 6 to under 8, and $80 at 8+ MAF. {selectedEnhancementIds.length?('Enhancement investment cost: -'+money([...heldEnhancements,...(currentEnhancement?[currentEnhancement]:[])].filter(x=>x.id&&selectedEnhancementIds.includes(x.id)).reduce((sum,x)=>sum+(x.cost??0),0))+'.'):'No enhancement investment cost selected.'}</p></div>
       </section>
 
       <section className="toy4-board">
@@ -251,7 +270,7 @@ export default function Toy4(p:Toy4Props){
     </section>}
 
     {!active&&finalScore&&<ReservoirDashboard storage={finalBalances.A+finalBalances.B+finalBalances.Fed} capacity={p.config.reservoirCapacity} history={history}/>}
-    <section className="rules"><strong>Toy 4 core rules:</strong> allocation and demand are newly dealt every turn. Effective hydrology is allocated A first 5 MAF, B next 5 MAF, and any amount above 10 MAF to Fed. Fed starts with 2 MAF. System Demand defaults to Serve whenever the Fed account has enough water; the player may click the card to Ignore it. Insufficient Fed storage is flagged and demand cannot be served. Served demand earns +$10/MAF and unserved or ignored demand costs -$15/MAF. Fed earns a per-turn operational resilience reward from ending Fed Banked Water: $0 below 2 MAF, $10 from 2 to under 4 MAF, and $20 at 4 MAF or more. Final total system storage earns a separate terminal reward of $0 below 2 MAF, $20 at 2 to under 4, $40 at 4 to under 6, $60 at 6 to under 8, and $80 at 8+ MAF. Fed may keep up to three persistent Supply Enhancement cards. Cards remain held automatically until invested or removed by a random event; there is no voluntary discard. Uninvested cards face a 35% loss risk before the next turn. Investing deducts the card cost and adds its water to next turn's unknown natural hydrology before normal A → B → Fed allocation. Only one enhancement can be invested per turn, including the final turn; a final-turn investment contributes directly to final system storage.</section>
+    <section className="rules"><strong>Toy 4 core rules:</strong> allocation and demand are newly dealt every turn. Effective hydrology is allocated A first 5 MAF, B next 5 MAF, and any amount above 10 MAF to Fed. Fed starts with 2 MAF. System Demand defaults to Serve whenever the Fed account has enough water; the player may click the card to Ignore it. Insufficient Fed storage is flagged and demand cannot be served. Served demand earns +$10/MAF and unserved or ignored demand costs -$15/MAF. Fed earns a per-turn operational resilience reward from ending Fed Banked Water: $0 below 2 MAF, $10 from 2 to under 4 MAF, and $20 at 4 MAF or more. Final total system storage earns a separate terminal reward of $0 below 2 MAF, $20 at 2 to under 4, $40 at 4 to under 6, $60 at 6 to under 8, and $80 at 8+ MAF. Fed may keep up to three persistent Supply Enhancement cards. Cards remain held automatically until invested or removed by a random event; there is no voluntary discard. Uninvested cards face a 35% loss risk before the next turn. Investing deducts the card cost and adds its water to next turn's unknown natural hydrology before normal A → B → Fed allocation. Any number of held Supply Enhancement cards may be invested in the same turn. Their quantities are combined and added to next turn's unknown natural hydrology before normal A → B → Fed allocation. On the final turn, invested enhancement water is credited directly to final Fed storage, subject to the Fed account and reservoir capacity limits.</section>
   </>
 }
 
