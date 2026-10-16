@@ -308,6 +308,17 @@ describe('Toy 4 turn-based card game',()=>{
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
 
+  it('calculates hidden hydropower revenue from opening storage and A+B supplied demand',async()=>{
+    const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
+    const draw={turn:1,inflow:10,allocationA:5,allocationB:5,federalAllocation:0,demandA:5,demandB:5,hiddenUnitProfitA:3,hiddenUnitProfitB:4,wildCardA:null,wildCardB:null,systemRequirement:0,supplyEnhancement:null}
+    const d={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
+    const low=resolveToy4Turn({A:2,B:2,Fed:1},draw,d,d,[],[])
+    expect(low.playerA.servedDemand+low.playerB.servedDemand).toBeCloseTo(10)
+    expect(low.hydropowerRevenue).toBeCloseTo(6)
+    const high=resolveToy4Turn({A:5,B:5,Fed:2},draw,d,d,[],[])
+    expect(high.hydropowerRevenue).toBeCloseTo(10)
+  })
+
   it('applies a prior-turn Supply Enhancement to hydrology before allocation',async()=>{
     const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
     const draw={turn:1,inflow:9,allocationA:5,allocationB:4,federalAllocation:0,demandA:5,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,wildCardA:null,wildCardB:null,systemRequirement:0,supplyEnhancement:{quantity:1.5,reward:10}}
