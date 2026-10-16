@@ -31,7 +31,7 @@ export interface Toy4TurnDraw {
   wildCardA:WildCard|null
   wildCardB:WildCard|null
   systemRequirement:number
-  systemReleaseType:'Recreation'|'Ecological'|'Environmental'
+  systemReleaseType?:'Recreation'|'Ecological'|'Environmental'
   supplyEnhancement:SupplyEnhancementCard|null
   enhancementLossRolls?:number[]
 }
