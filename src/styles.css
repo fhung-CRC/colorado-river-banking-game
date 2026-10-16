@@ -234,3 +234,12 @@ th:first-child,td:first-child{text-align:left}
 .toy4-fed-enhancement-cards .toy4-wild-card{min-height:135px;padding:12px;border-radius:13px;justify-content:space-between}
 @media(max-width:1050px){.toy4-fed-sections{grid-template-columns:1fr}.toy4-fed-enhancement-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:650px){.toy4-fed-primary-cards,.toy4-fed-enhancement-cards{grid-template-columns:1fr}}
+
+/* FED: two untitled card groups side by side; every card uses the player-card footprint */
+.toy4-fed-sections{display:grid;grid-template-columns:2fr 3fr;gap:18px;width:100%;align-items:start}
+.toy4-fed-section{border:0;border-radius:0;padding:0;background:transparent;min-width:0}
+.toy4-fed-primary-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.toy4-fed-enhancement-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.toy4-fed-primary-cards>.toy4-card,.toy4-fed-enhancement-cards>.toy4-wild-card{width:100%;min-width:0;min-height:135px;height:100%;box-sizing:border-box}
+@media(max-width:1050px){.toy4-fed-sections{grid-template-columns:1fr}.toy4-fed-primary-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.toy4-fed-enhancement-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){.toy4-fed-primary-cards,.toy4-fed-enhancement-cards{grid-template-columns:1fr}}
