@@ -31,6 +31,7 @@ export interface Toy4TurnDraw {
   wildCardA:WildCard|null
   wildCardB:WildCard|null
   systemRequirement:number
+  systemReleaseType?:'Recreation'|'Ecological'|'Environmental'
   supplyEnhancement:SupplyEnhancementCard|null
   enhancementLossRolls?:number[]
 }
@@ -95,6 +96,7 @@ const PROFITS_A=[2,2.5,3,3.5,4]
 const PROFITS_B=[3,3.5,4,4.5,5]
 const TOY4_HYDROLOGY=Array.from({length:25},(_,i)=>3+i*0.5)
 const SYSTEM_REQUIREMENTS=[0,0,0,0,0.5,0.5,0.5,0.5,0.5,1,1,1,1,1,1,1.5,1.5,1.5,2,2]
+const SYSTEM_RELEASE_TYPES=['Recreation','Ecological','Environmental'] as const
 const SUPPLY_ENHANCEMENT_QUANTITIES=[0.5,1,1.5]
 const SUPPLY_ENHANCEMENT_COSTS=[5,10,15]
 
@@ -161,6 +163,7 @@ export function createToy4Scenario(
       wildCardA:drawWildCard(rand,turn,'A'),
       wildCardB:drawWildCard(rand,turn,'B'),
       systemRequirement,
+      systemReleaseType:pick([...SYSTEM_RELEASE_TYPES],rand()),
       supplyEnhancement:drawSupplyEnhancement(rand,turn),
       enhancementLossRolls:[rand(),rand(),rand()]
     })
@@ -325,9 +328,9 @@ export function resolveToy4Turn(
 
   const fedReleaseReward=fedRelease>0||draw.systemRequirement===0?draw.systemRequirement*10:0
   const fedUnmetPenalty=fedRelease+1e-9>=draw.systemRequirement?0:draw.systemRequirement*15
-  // Storage protection is no longer a recurring positive reward. A complete
-  // system-storage collapse still carries an immediate operating penalty.
-  const fedProtectionBonus=totalStorage===0?-30:0
+  // Per-turn operational resilience reward is based on water the Fed controls.
+  // This rewards flexibility without double-counting A/B storage during play.
+  const fedProtectionBonus=endBalances.Fed>=4?20:endBalances.Fed>=2?10:0
 
   return {
     turn:draw.turn,
@@ -404,6 +407,10 @@ export function terminalSecurityValue(player:Toy4Player,bank:number){
 
 export function terminalFedResilienceValue(totalStorage:number){
   const storage=Math.max(0,totalStorage)
-  return storage*(storage<=2?5:10)
+  if(storage<2) return 0
+  if(storage<4) return 20
+  if(storage<6) return 40
+  if(storage<8) return 60
+  return 80
 }
 
