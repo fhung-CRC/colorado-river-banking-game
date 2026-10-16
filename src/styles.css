@@ -214,3 +214,14 @@ th:first-child,td:first-child{text-align:left}
 .toy4-enhancement-card.new{border-color:#2f789f;box-shadow:0 0 0 3px rgba(47,120,159,.1)}
 @media(max-width:1050px){.toy4-turn-strip{grid-template-columns:repeat(2,1fr)}.toy4-end-turn.integrated{grid-column:1/-1}.toy4-fed-control .fed-cards{grid-template-columns:1fr}}
 @media(max-width:650px){.toy4-turn-strip{grid-template-columns:1fr}.toy4-enhancement-hand.unified .toy4-hand-cards{grid-template-columns:1fr}}
+
+/* Toy 4 Fed cards mirror the player card language */
+.toy4-fed-control .fed-cards{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}
+.toy4-fed-control .toy4-enhancement-hand.unified{display:contents}
+.toy4-fed-control .toy4-enhancement-hand.unified .toy4-hand-title{grid-column:3;margin:0 0 4px}
+.toy4-fed-control .toy4-enhancement-hand.unified .toy4-hand-cards{grid-column:3;display:grid;grid-template-columns:1fr;gap:9px}
+.toy4-wild-card.supply{border-color:#9e8ac2;background:#faf8ff;color:#2d2440;cursor:pointer}
+.toy4-wild-card.supply.selected{box-shadow:0 0 0 4px rgba(94,70,139,.16);border-color:#5e468b;background:#f3effc}
+.toy4-wild-card.supply.new{outline:2px solid rgba(94,70,139,.12)}
+@media(max-width:1050px){.toy4-fed-control .fed-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.toy4-fed-control .toy4-enhancement-hand.unified .toy4-hand-title,.toy4-fed-control .toy4-enhancement-hand.unified .toy4-hand-cards{grid-column:1/-1}}
+@media(max-width:650px){.toy4-fed-control .fed-cards{grid-template-columns:1fr}}
