@@ -219,21 +219,16 @@ export default function Toy4(p:Toy4Props){
           </div>:<p>No previous turn yet.</p>}
         </div>
         <div className="toy4-fed-sections">
-          <div className="toy4-fed-section">
-            <div className="toy4-hand-title"><strong>Water Operations</strong><span>Current Fed storage and system release decision</span></div>
-            <div className="toy4-fed-primary-cards">
-              <GameCard kind="bank" title="Banked Water" value={fmt(balances.Fed)+' MAF'} note="Operational reserve · 10 MAF limit."/>
-              <button type="button" disabled={active.systemRequirement===0||balances.Fed<active.systemRequirement}
-                className={"toy4-card demand clickable "+(serveSystemDemand?"selected ":"")+(balances.Fed<active.systemRequirement&&active.systemRequirement>0?"insufficient":"")}
-                onClick={()=>setServeSystemDemand(v=>!v)}>
-                <span>{active.systemReleaseType} Release</span><b>{fmt(active.systemRequirement)} MAF</b>
-                <small>{active.systemRequirement===0?"No system demand · score impact $0":balances.Fed<active.systemRequirement?"⚠ INSUFFICIENT STORAGE · cannot serve · -"+money(active.systemRequirement*15):serveSystemDemand?"SERVE BY DEFAULT · +"+money(active.systemRequirement*10)+" · click to ignore":"IGNORE SELECTED · -"+money(active.systemRequirement*15)+" · click to serve"}</small>
-              </button>
-            </div>
+          <div className="toy4-fed-section toy4-fed-primary-cards">
+            <GameCard kind="bank" title="Banked Water" value={fmt(balances.Fed)+' MAF'} note="Operational reserve · 10 MAF limit."/>
+            <button type="button" disabled={active.systemRequirement===0||balances.Fed<active.systemRequirement}
+              className={"toy4-card demand clickable "+(serveSystemDemand?"selected ":"")+(balances.Fed<active.systemRequirement&&active.systemRequirement>0?"insufficient":"")}
+              onClick={()=>setServeSystemDemand(v=>!v)}>
+              <span>{active.systemReleaseType} Release</span><b>{fmt(active.systemRequirement)} MAF</b>
+              <small>{active.systemRequirement===0?"No system demand · score impact $0":balances.Fed<active.systemRequirement?"⚠ INSUFFICIENT STORAGE · cannot serve · -"+money(active.systemRequirement*15):serveSystemDemand?"SERVE BY DEFAULT · +"+money(active.systemRequirement*10)+" · click to ignore":"IGNORE SELECTED · -"+money(active.systemRequirement*15)+" · click to serve"}</small>
+            </button>
           </div>
-          <div className="toy4-fed-section">
-            <div className="toy4-hand-title"><strong>Supply Enhancement</strong><span>{Math.min(3,heldEnhancements.length+(currentEnhancement?1:0))}/3 · click any cards to invest · multiple may be played</span></div>
-            <div className="toy4-fed-enhancement-cards">
+          <div className="toy4-fed-section toy4-fed-enhancement-cards">
               {[...heldEnhancements,...(currentEnhancement&&heldEnhancements.length<3?[currentEnhancement]:[])].map(card=><button
                 key={card.id}
                 type="button"
@@ -243,7 +238,6 @@ export default function Toy4(p:Toy4Props){
                 <span>Supply Enhancement</span><b>+{fmt(card.quantity)} MAF</b>
                 <small>Cost {money(card.cost??0)} · {selectedEnhancementIds.includes(card.id??'')?'INVESTING':'HOLD / INVEST'}</small>
               </button>)}
-            </div>
           </div>
         </div>
         {lostEnhancements.length>0&&<div className="toy4-lost-strip"><strong>Lost opportunities</strong>{lostEnhancements.map((x,i)=><div key={(x.card.id??'lost')+i} className="toy4-lost-card"><span className="toy4-x">×</span><div><b>{x.reason}</b><small>+{fmt(x.card.quantity)} MAF · Cost {money(x.card.cost??0)}</small></div></div>)}</div>}
