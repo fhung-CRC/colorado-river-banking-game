@@ -328,7 +328,7 @@ export function resolveToy4Turn(
   const waterBalanceError=(startStorage+effectiveInflow)-accountedEnd
 
   const fedReleaseReward=fedRelease>0||draw.systemRequirement===0?draw.systemRequirement*10:0
-  const fedUnmetPenalty=fedRelease+1e-9>=draw.systemRequirement?0:draw.systemRequirement*15
+  const fedUnmetPenalty=fedRelease+1e-9>=draw.systemRequirement?0:draw.systemRequirement*30
   // Per-turn operational resilience reward is based on water the Fed controls.
   // This rewards flexibility without double-counting A/B storage during play.
   const fedProtectionBonus=endBalances.Fed>=4?20:endBalances.Fed>=2?10:0
@@ -415,10 +415,6 @@ export function terminalSecurityValue(player:Toy4Player,bank:number){
 
 export function terminalFedResilienceValue(totalStorage:number){
   const storage=Math.max(0,totalStorage)
-  if(storage<2) return 0
-  if(storage<4) return 20
-  if(storage<6) return 40
-  if(storage<8) return 60
-  return 80
+  return storage<=5?5:10
 }
 
