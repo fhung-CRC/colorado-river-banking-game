@@ -308,6 +308,18 @@ describe('Toy 4 turn-based card game',()=>{
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
 
+  it('doubles the Fed unmet-demand penalty and uses the reduced terminal storage reward',async()=>{
+    const { resolveToy4Turn, terminalFedResilienceValue }=await import('../src/simulation/toy4Model')
+    const draw={turn:1,inflow:5,allocationA:5,allocationB:0,federalAllocation:0,demandA:5,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,wildCardA:null,wildCardB:null,systemRequirement:1,supplyEnhancement:null}
+    const d={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
+    const r=resolveToy4Turn({A:1,B:2,Fed:2},draw,d,d,[],[],false,false)
+    expect(r.fedUnmetPenalty).toBeCloseTo(30)
+    expect(terminalFedResilienceValue(0)).toBe(5)
+    expect(terminalFedResilienceValue(5)).toBe(5)
+    expect(terminalFedResilienceValue(5.5)).toBe(10)
+    expect(terminalFedResilienceValue(12)).toBe(10)
+  })
+
   it('calculates hidden hydropower revenue from opening storage and A+B supplied demand',async()=>{
     const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
     const draw={turn:1,inflow:10,allocationA:5,allocationB:5,federalAllocation:0,demandA:5,demandB:5,hiddenUnitProfitA:3,hiddenUnitProfitB:4,wildCardA:null,wildCardB:null,systemRequirement:0,supplyEnhancement:null}
