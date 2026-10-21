@@ -20,6 +20,8 @@ jobs:
           node-version: 24
       - run: npm install
       - run: npm run build
+      - name: Add standalone Toy 4 Pages entry point
+        run: mkdir -p dist/toy4 && cp dist/index.html dist/toy4/index.html
       - uses: actions/configure-pages@v5
         with:
           enablement: true
