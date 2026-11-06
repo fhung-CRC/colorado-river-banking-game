@@ -79,7 +79,7 @@ export default function Toy4(p:Toy4Props){
     setDecisionA(blankDecision())
     setDecisionB(blankDecision())
     setScoreA(0);setScoreB(0);setScoreFed(0)
-    setServeSystemDemand((next[0]?.systemRequirement??0)===0||TOY4_START_BALANCES.Fed>0);setHeldEnhancements([]);setSelectedEnhancementIds([]);setPendingEnhancement(0);setLostEnhancements([])
+    setServeSystemDemand((next[0]?.systemRequirement??0)===0||TOY4_START_BALANCES.Fed>0);setHeldEnhancements([]);setSelectedEnhancementIds(next[0]?.supplyEnhancement?.id?[next[0].supplyEnhancement.id]:[]);setPendingEnhancement(0);setLostEnhancements([])
     setLastA(null);setLastB(null);setLastFed(null)
     setHistory([])
     setFinalScore(null)
@@ -164,7 +164,8 @@ export default function Toy4(p:Toy4Props){
     if(lost.length) setLostEnhancements(old=>[...lost,...old].slice(0,3))
     setPendingEnhancement(investedQuantity)
     setTurnIndex(i=>i+1)
-    setDecisionA(blankDecision());setDecisionB(blankDecision());setServeSystemDemand(nextTurn.systemRequirement===0||result.endBalances.Fed>0);setSelectedEnhancementIds([])
+    const nextAvailableEnhancements=[...survived,...(nextTurn.supplyEnhancement&&survived.length<3?[nextTurn.supplyEnhancement]:[])]
+    setDecisionA(blankDecision());setDecisionB(blankDecision());setServeSystemDemand(nextTurn.systemRequirement===0||result.endBalances.Fed>0);setSelectedEnhancementIds(nextAvailableEnhancements.flatMap(card=>card.id?[card.id]:[]))
     const lossNote=lost.length?' '+lost.map(x=>x.reason+': +'+fmt(x.card.quantity)+' MAF / '+money(x.card.cost??0)+' opportunity lost.').join(' '):''
     setMessage('Turn '+(turnIndex+2)+' dealt. Last-turn unit profit is now revealed.'+lossNote+a.note+b.note)
   }
@@ -240,7 +241,7 @@ export default function Toy4(p:Toy4Props){
                 onClick={()=>card.id&&setSelectedEnhancementIds(ids=>ids.includes(card.id!)?ids.filter(id=>id!==card.id):[...ids,card.id!])}
               >
                 <span>Supply Enhancement</span><b>+{fmt(card.quantity)} MAF</b>
-                <small>Cost {money(card.cost??0)} · {selectedEnhancementIds.includes(card.id??'')?'INVESTING':'HOLD / INVEST'}</small>
+                <small>Cost {money(card.cost??0)} · {selectedEnhancementIds.includes(card.id??'')?'INVEST BY DEFAULT · click to hold':'HOLDING · click to invest'}</small>
               </button>)}
           </div>
         </div>
