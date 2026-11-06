@@ -44,7 +44,7 @@ export default function Toy4(p:Toy4Props){
   const [lostEnhancements,setLostEnhancements]=useState<{card:SupplyEnhancementCard;reason:string}[]>([])
   const [lastA,setLastA]=useState<Toy4Settlement|null>(null)
   const [lastB,setLastB]=useState<Toy4Settlement|null>(null)
-  const [lastFed,setLastFed]=useState<{demand:number;served:number;demandScore:number;hydropowerRevenue:number;emergencyPenalty:number;investmentCost:number;net:number}|null>(null)
+  const [lastFed,setLastFed]=useState<{demand:number;served:number;deposit:number;endingBank:number;demandScore:number;hydropowerRevenue:number;emergencyPenalty:number;investmentCost:number;net:number}|null>(null)
   const [history,setHistory]=useState<Toy4TurnResult[]>([])
   const [message,setMessage]=useState('Start Toy 4 to deal the first turn.')
   const [finalScore,setFinalScore]=useState<{A:number;B:number;Fed:number}|null>(null)
@@ -57,6 +57,8 @@ export default function Toy4(p:Toy4Props){
   const effectiveAllocationA=Math.min(5,effectiveInflow)
   const effectiveAllocationB=Math.min(5,Math.max(0,effectiveInflow-5))
   const effectiveFedAllocation=Math.max(0,effectiveInflow-10)
+  const selectedFedRelease=active&&serveSystemDemand?Math.min(active.systemRequirement,balances.Fed):0
+  const fedBankAfterRelease=Math.max(0,balances.Fed-selectedFedRelease)
   const activeForPlayers=active?{...active,allocationA:effectiveAllocationA,allocationB:effectiveAllocationB,federalAllocation:effectiveFedAllocation}:active
 
   function addDrawToHand(hand:WildCard[],card:WildCard|null){
@@ -132,7 +134,7 @@ export default function Toy4(p:Toy4Props){
     setHistory(h=>[...h,result])
     setBalances(result.endBalances)
     setLastA(settlementA);setLastB(settlementB)
-    setLastFed({demand:active.systemRequirement,served:result.fedRelease,demandScore:result.fedReleaseReward-result.fedUnmetPenalty,hydropowerRevenue:result.hydropowerRevenue,emergencyPenalty:result.fedProtectionBonus,investmentCost,net:fedTurnNet})
+    setLastFed({demand:active.systemRequirement,served:result.fedRelease,deposit:result.depositFed,endingBank:result.endBalances.Fed,demandScore:result.fedReleaseReward-result.fedUnmetPenalty,hydropowerRevenue:result.hydropowerRevenue,emergencyPenalty:result.fedProtectionBonus,investmentCost,net:fedTurnNet})
     setScoreA(nextScoreA);setScoreB(nextScoreB);setScoreFed(nextScoreFed)
 
     if(turnIndex+1>=scenario.length){
@@ -211,7 +213,9 @@ export default function Toy4(p:Toy4Props){
           <span>Last turn statement</span>
           {lastFed?<div className="toy4-settlement-grid">
             <div><small>System demand</small><b>{fmt(lastFed.demand)} MAF</b></div>
-            <div><small>Served</small><b>{fmt(lastFed.served)} MAF</b></div>
+            <div><small>Release from Fed bank</small><b>-{fmt(lastFed.served)} MAF</b></div>
+            <div><small>New Fed deposit</small><b>+{fmt(lastFed.deposit)} MAF</b></div>
+            <div><small>Ending Fed bank</small><b>{fmt(lastFed.endingBank)} MAF</b></div>
             <div><small>Demand score</small><b>{money(lastFed.demandScore)}</b></div>
             <div><small>Hydropower revenue</small><b>+{money(lastFed.hydropowerRevenue)}</b></div>
             <div><small>Investment</small><b>-{money(lastFed.investmentCost)}</b></div>
@@ -220,7 +224,7 @@ export default function Toy4(p:Toy4Props){
         </div>
         <div className="toy4-fed-sections">
           <div className="toy4-fed-section toy4-fed-primary-cards">
-            <GameCard kind="bank" title="Banked Water" value={fmt(balances.Fed)+' MAF'} note="Operational reserve · 10 MAF limit."/>
+            <GameCard kind="bank" title="Banked Water After Release" value={fmt(fedBankAfterRelease)+' MAF'} note={serveSystemDemand&&active.systemRequirement>0?fmt(balances.Fed)+' opening − '+fmt(selectedFedRelease)+' release. New surplus deposits are added when the turn ends.':'No release selected · '+fmt(balances.Fed)+' MAF currently banked.'}/>
             <button type="button" disabled={active.systemRequirement===0||balances.Fed<=0}
               className={"toy4-card demand clickable "+(serveSystemDemand?"selected ":"")+(balances.Fed<active.systemRequirement&&active.systemRequirement>0?"insufficient":"")}
               onClick={()=>setServeSystemDemand(v=>!v)}>
