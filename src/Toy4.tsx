@@ -339,7 +339,7 @@ function PlayerBoard(props:{
           type="button"
         >
           <span>{card.type==='supplemental'?'Supplemental Supply':'Demand Flexibility'}</span>
-          <b>{card.type==='supplemental'?'+':'-'}{fmt(card.quantity)} MAF water needed</b>
+          <b>{card.type==='supplemental'?'+':'-'}{fmt(card.quantity)} MAF{card.type==='flexibility'?' water needed':''}</b>
           <small>Cost {money(card.cost)} · {props.decision.selectedWildCardIds.includes(card.id)?'PLAYING':'HOLD / PLAY'}</small>
         </button>)}
         {props.hand.length===0&&<div className="toy4-no-card">No wild cards held</div>}
