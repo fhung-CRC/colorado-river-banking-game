@@ -235,8 +235,12 @@ export function resolveToy4Turn(
   const allocationA=allocation.allocationA
   const allocationB=allocation.allocationB
   const federalAllocation=allocation.federalAllocation
-  const canServe=draw.systemRequirement<=start.Fed+1e-9
-  const fedRelease=serveSystemDemand&&canServe?draw.systemRequirement:0
+  // Federal releases draw only from water already held in the Fed account at
+  // the start of the turn. If the requirement is larger than that balance,
+  // serve as much as is available; a same-turn surplus deposit cannot fund it.
+  const fedRelease=serveSystemDemand
+    ?Math.min(Math.max(0,draw.systemRequirement),Math.max(0,start.Fed))
+    :0
   const operatingStart:Balances={...start,Fed:start.Fed-fedRelease}
 
   const selectedA=selectedCards(handA,decisionA.selectedWildCardIds)
@@ -327,8 +331,8 @@ export function resolveToy4Turn(
     unbankedWater
   const waterBalanceError=(startStorage+effectiveInflow)-accountedEnd
 
-  const fedReleaseReward=fedRelease>0||draw.systemRequirement===0?draw.systemRequirement*10:0
-  const fedUnmetPenalty=fedRelease+1e-9>=draw.systemRequirement?0:draw.systemRequirement*30
+  const fedReleaseReward=fedRelease*10
+  const fedUnmetPenalty=Math.max(0,draw.systemRequirement-fedRelease)*30
   // Per-turn operational resilience reward is based on water the Fed controls.
   // This rewards flexibility without double-counting A/B storage during play.
   const fedProtectionBonus=endBalances.Fed>=4?20:endBalances.Fed>=2?10:0

@@ -308,6 +308,30 @@ describe('Toy 4 turn-based card game',()=>{
     expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
   })
 
+  it('partially serves a Federal release when the requirement exceeds the Fed bank balance',async()=>{
+    const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
+    const draw={turn:1,inflow:5,allocationA:5,allocationB:0,federalAllocation:0,demandA:5,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,wildCardA:null,wildCardB:null,systemRequirement:1.5,systemReleaseType:'Environmental' as const,supplyEnhancement:null}
+    const d={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
+    const r=resolveToy4Turn({A:1,B:2,Fed:0.5},draw,d,d,[],[],true,false)
+    expect(r.fedRelease).toBeCloseTo(0.5)
+    expect(r.fedReleaseReward).toBeCloseTo(5)
+    expect(r.fedUnmetPenalty).toBeCloseTo(30)
+    expect(r.endBalances.Fed).toBeCloseTo(0)
+    expect(r.totalStorage).toBeCloseTo(3)
+    expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
+  })
+
+  it('does not use same-turn Federal surplus allocation to fund a release',async()=>{
+    const { resolveToy4Turn }=await import('../src/simulation/toy4Model')
+    const draw={turn:1,inflow:12,allocationA:5,allocationB:5,federalAllocation:2,demandA:5,demandB:5,hiddenUnitProfitA:3,hiddenUnitProfitB:4,wildCardA:null,wildCardB:null,systemRequirement:1.5,systemReleaseType:'Recreation' as const,supplyEnhancement:null}
+    const d={saveFromAllocation:0,bankWithdrawalLimit:0,selectedWildCardIds:[]}
+    const r=resolveToy4Turn({A:0,B:0,Fed:0.5},draw,d,d,[],[],true,false)
+    expect(r.fedRelease).toBeCloseTo(0.5)
+    expect(r.depositFed).toBeCloseTo(2)
+    expect(r.endBalances.Fed).toBeCloseTo(2)
+    expect(Math.abs(r.waterBalanceError)).toBeLessThan(1e-8)
+  })
+
   it('doubles the Fed unmet-demand penalty and uses the reduced terminal storage reward',async()=>{
     const { resolveToy4Turn, terminalFedResilienceValue }=await import('../src/simulation/toy4Model')
     const draw={turn:1,inflow:5,allocationA:5,allocationB:0,federalAllocation:0,demandA:5,demandB:4,hiddenUnitProfitA:3,hiddenUnitProfitB:4,wildCardA:null,wildCardB:null,systemRequirement:1,supplyEnhancement:null}

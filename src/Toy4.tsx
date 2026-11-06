@@ -77,7 +77,7 @@ export default function Toy4(p:Toy4Props){
     setDecisionA(blankDecision())
     setDecisionB(blankDecision())
     setScoreA(0);setScoreB(0);setScoreFed(0)
-    setServeSystemDemand((next[0]?.systemRequirement??0)<=TOY4_START_BALANCES.Fed);setHeldEnhancements([]);setSelectedEnhancementIds([]);setPendingEnhancement(0);setLostEnhancements([])
+    setServeSystemDemand((next[0]?.systemRequirement??0)===0||TOY4_START_BALANCES.Fed>0);setHeldEnhancements([]);setSelectedEnhancementIds([]);setPendingEnhancement(0);setLostEnhancements([])
     setLastA(null);setLastB(null);setLastFed(null)
     setHistory([])
     setFinalScore(null)
@@ -162,7 +162,7 @@ export default function Toy4(p:Toy4Props){
     if(lost.length) setLostEnhancements(old=>[...lost,...old].slice(0,3))
     setPendingEnhancement(investedQuantity)
     setTurnIndex(i=>i+1)
-    setDecisionA(blankDecision());setDecisionB(blankDecision());setServeSystemDemand(nextTurn.systemRequirement<=result.endBalances.Fed);setSelectedEnhancementIds([])
+    setDecisionA(blankDecision());setDecisionB(blankDecision());setServeSystemDemand(nextTurn.systemRequirement===0||result.endBalances.Fed>0);setSelectedEnhancementIds([])
     const lossNote=lost.length?' '+lost.map(x=>x.reason+': +'+fmt(x.card.quantity)+' MAF / '+money(x.card.cost??0)+' opportunity lost.').join(' '):''
     setMessage('Turn '+(turnIndex+2)+' dealt. Last-turn unit profit is now revealed.'+lossNote+a.note+b.note)
   }
@@ -221,11 +221,11 @@ export default function Toy4(p:Toy4Props){
         <div className="toy4-fed-sections">
           <div className="toy4-fed-section toy4-fed-primary-cards">
             <GameCard kind="bank" title="Banked Water" value={fmt(balances.Fed)+' MAF'} note="Operational reserve · 10 MAF limit."/>
-            <button type="button" disabled={active.systemRequirement===0||balances.Fed<active.systemRequirement}
+            <button type="button" disabled={active.systemRequirement===0||balances.Fed<=0}
               className={"toy4-card demand clickable "+(serveSystemDemand?"selected ":"")+(balances.Fed<active.systemRequirement&&active.systemRequirement>0?"insufficient":"")}
               onClick={()=>setServeSystemDemand(v=>!v)}>
               <span>{active.systemReleaseType} Release</span><b>{fmt(active.systemRequirement)} MAF</b>
-              <small>{active.systemRequirement===0?"No system demand · score impact $0":balances.Fed<active.systemRequirement?"⚠ INSUFFICIENT STORAGE · cannot serve · -"+money(active.systemRequirement*30):serveSystemDemand?"SERVE BY DEFAULT · +"+money(active.systemRequirement*10)+" · click to ignore":"IGNORE SELECTED · -"+money(active.systemRequirement*30)+" · click to serve"}</small>
+              <small>{active.systemRequirement===0?"No system demand · score impact $0":balances.Fed<=0?"⚠ NO FED BANKED WATER · cannot serve · -"+money(active.systemRequirement*30):serveSystemDemand?(balances.Fed<active.systemRequirement?"PARTIAL RELEASE · "+fmt(balances.Fed)+" MAF available · click to ignore":"SERVE BY DEFAULT · +"+money(active.systemRequirement*10)+" · click to ignore"):"IGNORE SELECTED · -"+money(active.systemRequirement*30)+" · click to serve"}</small>
             </button>
           </div>
           <div className="toy4-fed-section toy4-fed-enhancement-cards">
@@ -241,7 +241,7 @@ export default function Toy4(p:Toy4Props){
           </div>
         </div>
         {lostEnhancements.length>0&&<div className="toy4-lost-strip"><strong>Lost opportunities</strong>{lostEnhancements.map((x,i)=><div key={(x.card.id??'lost')+i} className="toy4-lost-card"><span className="toy4-x">×</span><div><b>{x.reason}</b><small>+{fmt(x.card.quantity)} MAF · Cost {money(x.card.cost??0)}</small></div></div>)}</div>}
-        <div className="toy4-decision"><h3>Fed turn score preview</h3><p>System Release: {active.systemRequirement===0?money(0):serveSystemDemand?('+'+money(active.systemRequirement*10)):('-'+money(active.systemRequirement*30))}. Hydropower revenue is added each turn from A+B consumption using a storage-dependent price that remains hidden. Ending Fed Banked Water earns a resilience reward: $0 below 2 MAF, +$10 from 2 to under 4 MAF, and +$20 at 4 MAF or more. Final total system storage earns $5 at 0–5 MAF and $10 above 5 MAF. {selectedEnhancementIds.length?('Enhancement investment cost: -'+money([...heldEnhancements,...(currentEnhancement?[currentEnhancement]:[])].filter(x=>x.id&&selectedEnhancementIds.includes(x.id)).reduce((sum,x)=>sum+(x.cost??0),0))+'.'):'No enhancement investment cost selected.'}</p></div>
+        <div className="toy4-decision"><h3>Fed turn score preview</h3><p>System Release: {active.systemRequirement===0?money(0):serveSystemDemand?('+'+money(Math.min(active.systemRequirement,balances.Fed)*10)+' benefit, -'+money(Math.max(0,active.systemRequirement-balances.Fed)*30)+' unmet penalty'):('-'+money(active.systemRequirement*30))}. Hydropower revenue is added each turn from A+B consumption using a storage-dependent price that remains hidden. Ending Fed Banked Water earns a resilience reward: $0 below 2 MAF, +$10 from 2 to under 4 MAF, and +$20 at 4 MAF or more. Final total system storage earns $5 at 0–5 MAF and $10 above 5 MAF. {selectedEnhancementIds.length?('Enhancement investment cost: -'+money([...heldEnhancements,...(currentEnhancement?[currentEnhancement]:[])].filter(x=>x.id&&selectedEnhancementIds.includes(x.id)).reduce((sum,x)=>sum+(x.cost??0),0))+'.'):'No enhancement investment cost selected.'}</p></div>
       </section>
 
       <section className="toy4-board">
